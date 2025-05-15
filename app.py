@@ -598,9 +598,7 @@ def abrir_navegador():
 if __name__ == "__main__":
     from werkzeug.serving import is_running_from_reloader
 
-    criar_tabela()
-    criar_tabela_funcionarios()
-    criar_tabela_admin()
+    criar_tabelas()  # já cria todas as tabelas, inclusive funcionarios e config_admin
 
     if not is_running_from_reloader():
         Timer(1, abrir_navegador).start()
