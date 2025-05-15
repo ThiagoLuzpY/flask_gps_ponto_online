@@ -1,0 +1,14 @@
+# Executáveis e builds
+*.exe
+*.spec
+dist/
+build/
+
+# Ambientes virtuais
+.venv/
+venv/
+
+# Cache e lixo
+__pycache__/
+*.pyc
+.DS_Store
