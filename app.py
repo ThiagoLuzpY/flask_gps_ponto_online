@@ -276,6 +276,7 @@ def pagina_reset_senha():
     nome = session.get("nome_funcionario") if session["perfil"] == "funcionario" else None
 
     con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
 
     if session["perfil"] == "admin":
@@ -290,6 +291,11 @@ def pagina_reset_senha():
         nova_senha = request.form.get("nova_senha")
         confirmar = request.form.get("confirmar_senha")
 
+        latitude = request.form.get("latitude")
+        longitude = request.form.get("longitude")
+        endereco = obter_endereco(latitude, longitude)
+        data_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         if nova_senha != confirmar:
             mensagem = "❌ As senhas não coincidem."
         elif len(nova_senha) < 4:
@@ -298,21 +304,36 @@ def pagina_reset_senha():
             nome_partes = nome_selecionado.split(" ", 1)
             nome, sobrenome = nome_partes if len(nome_partes) > 1 else (nome_partes[0], "")
 
-            cur.execute("SELECT data_nascimento FROM funcionarios WHERE nome = ? AND sobrenome = ?", (nome, sobrenome))
+            cur.execute("SELECT id, data_nascimento FROM funcionarios WHERE nome = ? AND sobrenome = ?", (nome, sobrenome))
             row = cur.fetchone()
 
-            if session["perfil"] == "funcionario":
-                if not row or row[0] != data_nascimento:
-                    mensagem = "❌ Data de nascimento incorreta."
-                    con.close()
-                    return render_template("reset_senha.html", funcionarios=funcionarios, mensagem=mensagem)
+            if not row:
+                mensagem = "❌ Funcionário não encontrado."
+                con.close()
+                return render_template("reset_senha.html", funcionarios=funcionarios, mensagem=mensagem)
 
+            funcionario_id, nascimento_real = row
+
+            if session["perfil"] == "funcionario" and nascimento_real != data_nascimento:
+                mensagem = "❌ Data de nascimento incorreta."
+                con.close()
+                return render_template("reset_senha.html", funcionarios=funcionarios, mensagem=mensagem)
+
+            # Atualiza senha
             hash_nova = generate_password_hash(nova_senha)
-            cur.execute("UPDATE funcionarios SET senha_hash = ? WHERE nome = ? AND sobrenome = ?", (hash_nova, nome, sobrenome))
+            cur.execute("UPDATE funcionarios SET senha_hash = ? WHERE id = ?", (hash_nova, funcionario_id))
+
+            # Registra log
+            cur.execute("""
+                INSERT INTO log_reset_senha (funcionario_id, nome_funcionario, data_hora, latitude, longitude, endereco)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (funcionario_id, nome_selecionado, data_hora, latitude, longitude, endereco))
+
             con.commit()
             mensagem = "✅ Senha redefinida com sucesso."
-            con.close()
-            return render_template("reset_senha.html", funcionarios=funcionarios, mensagem=mensagem)
+
+        con.close()
+        return render_template("reset_senha.html", funcionarios=funcionarios, mensagem=mensagem)
 
     con.close()
     return render_template("reset_senha.html", funcionarios=funcionarios, mensagem=mensagem)
