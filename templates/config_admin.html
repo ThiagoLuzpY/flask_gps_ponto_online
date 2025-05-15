@@ -3,6 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>⚙️ Configurações do Administrador</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- ✅ PWA: Manifesto -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <!-- ✅ PWA: Ícones -->
+    <link rel="icon" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+    <link rel="apple-touch-icon" sizes="512x512" href="{{ url_for('static', filename='icons/icon-512.png') }}">
+
+    <!-- ✅ PWA: Cor e comportamento no mobile -->
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>

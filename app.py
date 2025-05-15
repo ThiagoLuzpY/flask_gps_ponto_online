@@ -8,7 +8,7 @@ import csv
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')  # ✅ Garante caminho correto para PWA
 app.secret_key = "segredo_super_secreto_123"
 DB_PATH = "/home/ThiagoLuz/flask_gps_ponto_online/loja.db"
 OPENCAGE_API_KEY = "c9aac9c2ac4b468fbd700c9dc1489763"
