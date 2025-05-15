@@ -1,113 +1,76 @@
-from flask import Flask, render_template, request, redirect, send_file
+from flask import Flask, render_template, request, redirect, send_file, session, flash, url_for
 import sqlite3
 from datetime import datetime
 import requests
 import pandas as pd
 import plotly.express as px
-from werkzeug.security import generate_password_hash, check_password_hash
 import csv
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
-
-
 
 app = Flask(__name__)
 app.secret_key = "segredo_super_secreto_123"
 DB_PATH = "loja.db"
 OPENCAGE_API_KEY = "c9aac9c2ac4b468fbd700c9dc1489763"
 
-def criar_tabela():
-    con = sqlite3.connect(DB_PATH)
-    con.execute("PRAGMA foreign_keys = ON")
-    cur = con.cursor()
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS pontos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            tipo TEXT NOT NULL,
-            data_hora TEXT NOT NULL,
-            latitude REAL,
-            longitude REAL,
-            endereco TEXT
-        )
-    ''')
-    con.commit()
-    con.close()
-
-
-def criar_tabela_funcionarios():
+# ---------- Funções de Inicialização ----------
+def criar_tabelas():
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
 
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS funcionarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            sobrenome TEXT NOT NULL,
-            telefone TEXT NOT NULL,
-            data_nascimento TEXT NOT NULL,
-            senha_hash TEXT NOT NULL
-        )
-    ''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS pontos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        tipo TEXT NOT NULL,
+        data_hora TEXT NOT NULL,
+        latitude REAL,
+        longitude REAL,
+        endereco TEXT)''')
 
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS log_reset_senha (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            funcionario_id INTEGER,
-            nome_funcionario TEXT,
-            data_hora TEXT NOT NULL,
-            latitude REAL,
-            longitude REAL,
-            endereco TEXT,
-            FOREIGN KEY (funcionario_id) REFERENCES funcionarios(id) ON DELETE SET NULL
-        )
-    ''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS funcionarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        sobrenome TEXT NOT NULL,
+        telefone TEXT NOT NULL,
+        data_nascimento TEXT NOT NULL,
+        senha_hash TEXT NOT NULL)''')
 
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS log_exclusao_funcionarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT,
-            sobrenome TEXT,
-            telefone TEXT,
-            data_nascimento TEXT,
-            latitude REAL,
-            longitude REAL,
-            endereco TEXT,
-            data_hora TEXT
-        )
-    ''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS log_reset_senha (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        funcionario_id INTEGER,
+        nome_funcionario TEXT,
+        data_hora TEXT NOT NULL,
+        latitude REAL,
+        longitude REAL,
+        endereco TEXT,
+        FOREIGN KEY (funcionario_id) REFERENCES funcionarios(id) ON DELETE SET NULL)''')
 
-    con.commit()
-    con.close()
+    cur.execute('''CREATE TABLE IF NOT EXISTS log_exclusao_funcionarios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT,
+        sobrenome TEXT,
+        telefone TEXT,
+        data_nascimento TEXT,
+        latitude REAL,
+        longitude REAL,
+        endereco TEXT,
+        data_hora TEXT)''')
 
+    cur.execute('''CREATE TABLE IF NOT EXISTS config_admin (
+        id INTEGER PRIMARY KEY,
+        nome TEXT NOT NULL,
+        senha_hash TEXT NOT NULL)''')
 
-def criar_tabela_admin():
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS config_admin (
-            id INTEGER PRIMARY KEY,
-            nome TEXT NOT NULL,
-            senha_hash TEXT NOT NULL
-        )
-    """)
-
-    # Verifica se já existe um admin cadastrado
     cur.execute("SELECT COUNT(*) FROM config_admin")
     if cur.fetchone()[0] == 0:
-        # Define senha padrão 'MC1234' (com hash)
-        senha_default = "MC1234"
-        hash_senha = generate_password_hash(senha_default)
+        hash_senha = generate_password_hash("MC1234")
         cur.execute("INSERT INTO config_admin (id, nome, senha_hash) VALUES (1, 'admin', ?)", (hash_senha,))
-        print("✅ Admin padrão criado com senha: MC1234")
 
     con.commit()
     con.close()
 
-
-
+# ---------- Utilitários ----------
 def obter_endereco(latitude, longitude):
     try:
         url = f"https://api.opencagedata.com/geocode/v1/json?q={latitude}+{longitude}&key={OPENCAGE_API_KEY}&language=pt-BR"
@@ -120,16 +83,15 @@ def obter_endereco(latitude, longitude):
         print("Erro ao obter endereço:", e)
     return "Endereço não encontrado"
 
-# Atualiza a rota index() no app.py para validar com nome completo
-@app.route("/", methods=["GET", "POST"])
-def selecao_perfil():
+# ---------- Rota Inicial ----------
+@app.route("/")
+def index():
     return render_template("selecao_perfil.html")
 
-
 @app.route("/registrar", methods=["GET", "POST"])
-def registrar_ponto():
+def pagina_registro_ponto():
     if session.get("perfil") != "funcionario":
-        return redirect("/")
+        return redirect(url_for("index"))
 
     mensagem = None
     latitude = longitude = endereco = None
@@ -179,9 +141,10 @@ def registrar_ponto():
     return render_template("index.html", mensagem=mensagem, latitude=latitude, longitude=longitude, endereco=endereco, funcionarios=funcionarios)
 
 @app.route("/registros")
-def registros():
+def pagina_registros():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
@@ -192,6 +155,7 @@ def registros():
     dados = cur.fetchall()
     con.close()
     return render_template("registros.html", dados=dados)
+
 
 def carregar_dados_para_grafico():
     con = sqlite3.connect(DB_PATH)
@@ -225,17 +189,14 @@ def grafico_interativo_plotly(df) -> str:
         font=dict(size=14)
     )
 
-    # ➕ Retorna o HTML como string (sem salvar arquivo)
     return fig.to_html(include_plotlyjs='cdn', full_html=False)
 
-# Atualiza rotas que renderizam selects: graficos, reset_senha
-from flask import render_template
-import pandas as pd
 
 @app.route("/graficos")
-def graficos():
+def pagina_graficos():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     df = carregar_dados_para_grafico()
     df["nome"] = df["nome"].astype(str)
 
@@ -270,10 +231,12 @@ def graficos():
 
     return render_template("graficos.html", html_grafico=html_grafico, funcionarios=funcionarios)
 
+
 @app.route("/cadastro", methods=["GET", "POST"])
-def cadastro():
+def pagina_cadastro():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     mensagem = None
 
     if request.method == "POST":
@@ -303,10 +266,11 @@ def cadastro():
 
     return render_template("cadastro.html", mensagem=mensagem)
 
+
 @app.route("/reset_senha", methods=["GET", "POST"])
-def reset_senha():
+def pagina_reset_senha():
     if session.get("perfil") not in ["admin", "funcionario"]:
-        return redirect("/")
+        return redirect(url_for("index"))
 
     mensagem = None
     nome = session.get("nome_funcionario") if session["perfil"] == "funcionario" else None
@@ -314,7 +278,6 @@ def reset_senha():
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
 
-    # ADMIN vê todos os nomes
     if session["perfil"] == "admin":
         cur.execute("SELECT nome, sobrenome FROM funcionarios ORDER BY nome ASC")
         funcionarios = [f"{n} {s}" for n, s in cur.fetchall()]
@@ -354,10 +317,12 @@ def reset_senha():
     con.close()
     return render_template("reset_senha.html", funcionarios=funcionarios, mensagem=mensagem)
 
+
 @app.route("/funcionarios", methods=["GET"])
-def funcionarios():
+def pagina_funcionarios():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
@@ -366,11 +331,12 @@ def funcionarios():
     con.close()
     return render_template("funcionarios.html", funcionarios=funcionarios)
 
-# Nova rota: exclusão de funcionário por ID
+
 @app.route("/excluir_funcionario", methods=["POST"])
 def excluir_funcionario():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     funcionario_id = request.form.get("funcionario_id")
     latitude = request.form.get("latitude", "")
     longitude = request.form.get("longitude", "")
@@ -389,7 +355,7 @@ def excluir_funcionario():
             nome, sobrenome, telefone, data_nascimento = row
             data_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # 📝 Registro completo no log
+            # 📝 Registro no log
             cur.execute("""
                 INSERT INTO log_exclusao_funcionarios 
                 (nome, sobrenome, telefone, data_nascimento, data_hora, latitude, longitude, endereco)
@@ -402,13 +368,14 @@ def excluir_funcionario():
         con.commit()
         con.close()
 
-    return redirect("/funcionarios")
+    return redirect(url_for("pagina_funcionarios"))
 
 
 @app.route("/exportar_funcionarios")
 def exportar_funcionarios():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
@@ -421,12 +388,18 @@ def exportar_funcionarios():
     writer.writerow(["Nome", "Sobrenome", "Telefone", "Data de Nascimento"])
     writer.writerows(dados)
     output.seek(0)
-    return send_file(io.BytesIO(output.read().encode('utf-8')), mimetype="text/csv", as_attachment=True, download_name="funcionarios.csv")
 
+    return send_file(
+        io.BytesIO(output.read().encode('utf-8')),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="funcionarios.csv"
+    )
 @app.route("/exportar_grafico_csv")
 def exportar_grafico_csv():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     df = carregar_dados_para_grafico()
     nome_filtro = request.args.get("nome", "").strip()
     tipo_filtro = request.args.get("tipo", "").strip()
@@ -451,12 +424,20 @@ def exportar_grafico_csv():
     output = io.StringIO()
     df.to_csv(output, index=False, columns=["nome", "tipo", "data_hora", "latitude", "longitude", "endereco"])
     output.seek(0)
-    return send_file(io.BytesIO(output.read().encode('utf-8')), mimetype="text/csv", as_attachment=True, download_name="grafico_marcacoes.csv")
+
+    return send_file(
+        io.BytesIO(output.read().encode('utf-8')),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="grafico_marcacoes.csv"
+    )
+
 
 @app.route("/exportar_registros_csv")
 def exportar_registros_csv():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     df = pd.read_sql_query("SELECT nome, tipo, data_hora, latitude, longitude, endereco FROM pontos ORDER BY data_hora DESC", con)
@@ -465,11 +446,13 @@ def exportar_registros_csv():
     output = io.StringIO()
     df.to_csv(output, index=False)
     output.seek(0)
-    return send_file(io.BytesIO(output.read().encode('utf-8')), mimetype="text/csv", as_attachment=True, download_name="registros.csv")
 
-
-from flask import session, redirect, url_for, render_template, request, flash
-
+    return send_file(
+        io.BytesIO(output.read().encode('utf-8')),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="registros.csv"
+    )
 @app.route("/login_admin", methods=["GET", "POST"])
 def login_admin():
     if request.method == "POST":
@@ -482,16 +465,14 @@ def login_admin():
         con.close()
 
         senha_valida = False
-
         if row:
             senha_hash = row[0]
             senha_valida = check_password_hash(senha_hash, senha)
 
-        # Caso senha válida OU senha padrão 'MC1234'
         if senha_valida or senha == "MC1234":
             session["perfil"] = "admin"
             flash("Login de administrador realizado com sucesso.", "success")
-            return redirect("/funcionarios")  # Página inicial para admins
+            return redirect(url_for("pagina_funcionarios"))
         else:
             flash("Senha incorreta. Tente novamente.", "danger")
             return render_template("login_admin.html")
@@ -502,7 +483,6 @@ def login_admin():
 @app.route("/login_funcionario", methods=["GET", "POST"])
 def login_funcionario():
     mensagem = None
-    funcionarios = []
 
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
@@ -528,22 +508,22 @@ def login_funcionario():
         if row and check_password_hash(row[0], senha):
             session["perfil"] = "funcionario"
             session["nome_funcionario"] = nome_completo
-            return redirect("/registrar")
+            return redirect(url_for("pagina_registro_ponto"))
         else:
             mensagem = "❌ Nome ou senha inválidos."
 
     return render_template("login_funcionario.html", mensagem=mensagem, funcionarios=funcionarios)
 
+
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("/")
-
+    return redirect(url_for("index"))
 
 @app.route("/config_admin", methods=["GET", "POST"])
-def config_admin():
+def pagina_config_admin():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
 
     mensagem = None
 
@@ -571,20 +551,23 @@ def config_admin():
             cur.execute("UPDATE config_admin SET senha_hash = ? WHERE id = 1", (novo_hash,))
             con.commit()
             mensagem = "✅ Senha alterada com sucesso."
+
         con.close()
 
     return render_template("config_admin.html", mensagem=mensagem)
 
+
 @app.route("/logs")
-def logs():
+def pagina_logs():
     if session.get("perfil") != "admin":
-        return redirect("/")
+        return redirect(url_for("index"))
+
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     con.row_factory = sqlite3.Row
     cur = con.cursor()
 
-    # ✅ Log de redefinição de senha (já com nome completo)
+    # ✅ Log de redefinição de senha
     cur.execute("""
         SELECT nome_funcionario, data_hora, latitude, longitude, endereco
         FROM log_reset_senha
@@ -592,7 +575,7 @@ def logs():
     """)
     reset_logs = cur.fetchall()
 
-    # ✅ Log de exclusão (dados armazenados diretamente)
+    # ✅ Log de exclusão
     cur.execute("""
         SELECT nome, sobrenome, telefone, data_nascimento, data_hora, latitude, longitude, endereco
         FROM log_exclusao_funcionarios
@@ -603,10 +586,12 @@ def logs():
     con.close()
     return render_template("logs.html", reset_logs=reset_logs, exclusao_logs=exclusao_logs)
 
+
 import webbrowser
 from threading import Timer
 
 def abrir_navegador():
+    # 🔧 Este comando só funciona em execução local, não afeta o PythonAnywhere
     webbrowser.open_new("http://127.0.0.1:5000")
 
 
@@ -615,7 +600,7 @@ if __name__ == "__main__":
 
     criar_tabela()
     criar_tabela_funcionarios()
-    criar_tabela_admin()  # ✅ Adicionado
+    criar_tabela_admin()
 
     if not is_running_from_reloader():
         Timer(1, abrir_navegador).start()

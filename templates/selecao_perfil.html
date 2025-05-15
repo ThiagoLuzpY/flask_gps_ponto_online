@@ -34,8 +34,8 @@
 <body>
     <div class="perfil-box">
         <h2>👥 Quem está acessando?</h2>
-        <a href="/login_admin" class="btn btn-danger btn-perfil">🔐 Administrador</a>
-        <a href="/login_funcionario" class="btn btn-primary btn-perfil">👤 Funcionário</a>
+        <a href="{{ url_for('login_admin') }}" class="btn btn-danger btn-perfil">🔐 Administrador</a>
+        <a href="{{ url_for('login_funcionario') }}" class="btn btn-primary btn-perfil">👤 Funcionário</a>
     </div>
 </body>
 </html>

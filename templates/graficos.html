@@ -58,25 +58,25 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">📍 Controle de Ponto</a>
+        <a class="navbar-brand" href="{{ url_for('index') }}">📍 Controle de Ponto</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 {% if session["perfil"] == "admin" %}
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/funcionarios' %}active{% endif %}" href="/funcionarios">Funcionários</a></li>
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/cadastro' %}active{% endif %}" href="/cadastro">Cadastrar Funcionário</a></li>
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/logs' %}active{% endif %}" href="/logs">Logs</a></li>
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/graficos' %}active{% endif %}" href="/graficos">Ver Gráficos</a></li>
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/reset_senha' %}active{% endif %}" href="/reset_senha">Resetar Senha</a></li>
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/config_admin' %}active{% endif %}" href="/config_admin">Configurações</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_funcionarios') %}active{% endif %}" href="{{ url_for('pagina_funcionarios') }}">Funcionários</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_cadastro') %}active{% endif %}" href="{{ url_for('pagina_cadastro') }}">Cadastrar Funcionário</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_logs') %}active{% endif %}" href="{{ url_for('pagina_logs') }}">Logs</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_graficos') %}active{% endif %}" href="{{ url_for('pagina_graficos') }}">Ver Gráficos</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_reset_senha') %}active{% endif %}" href="{{ url_for('pagina_reset_senha') }}">Resetar Senha</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_config_admin') %}active{% endif %}" href="{{ url_for('pagina_config_admin') }}">Configurações</a></li>
                 {% elif session["perfil"] == "funcionario" %}
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/registrar' %}active{% endif %}" href="/registrar">Registrar Ponto</a></li>
-                    <li class="nav-item"><a class="nav-link {% if request.path == '/reset_senha' %}active{% endif %}" href="/reset_senha">Resetar Senha</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_registro_ponto') %}active{% endif %}" href="{{ url_for('pagina_registro_ponto') }}">Registrar Ponto</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_reset_senha') %}active{% endif %}" href="{{ url_for('pagina_reset_senha') }}">Resetar Senha</a></li>
                 {% endif %}
                 {% if session["perfil"] %}
-                    <li class="nav-item"><a class="nav-link text-danger fw-bold" href="/logout">🚪 Sair</a></li>
+                    <li class="nav-item"><a class="nav-link text-danger fw-bold" href="{{ url_for('logout') }}">🚪 Sair</a></li>
                 {% endif %}
             </ul>
         </div>
@@ -122,7 +122,7 @@
 
 <!-- Exportar CSV -->
 <div class="export-btn">
-    <a href="/exportar_grafico_csv" class="btn btn-success">
+    <a href="{{ url_for('exportar_grafico_csv') }}" class="btn btn-success">
         <i class="bi bi-download"></i> Exportar CSV
     </a>
 </div>
@@ -136,7 +136,7 @@
     <p style="text-align:center;">Nenhum dado disponível para gerar o gráfico.</p>
 {% endif %}
 
-<a class="link-voltar" href="/">⬅ Voltar para o Início</a>
+<a class="link-voltar" href="{{ url_for('index') }}">⬅ Voltar para o Início</a>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
