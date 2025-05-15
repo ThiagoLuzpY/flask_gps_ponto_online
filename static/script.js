@@ -11,21 +11,38 @@ window.onload = function () {
                 const lat = position.coords.latitude.toFixed(6);
                 const lon = position.coords.longitude.toFixed(6);
 
-                latitudeInput.value = lat;
-                longitudeInput.value = lon;
+                if (latitudeInput) latitudeInput.value = lat;
+                if (longitudeInput) longitudeInput.value = lon;
 
-                coordenadasDiv.innerHTML = `
-                    📌 <strong>Localização detectada:</strong><br>
-                    Latitude: <code>${lat}</code><br>
-                    Longitude: <code>${lon}</code>
-                `;
+                if (coordenadasDiv) {
+                    coordenadasDiv.innerHTML = `
+                        📌 <strong>Localização detectada:</strong><br>
+                        Latitude: <code>${lat}</code><br>
+                        Longitude: <code>${lon}</code>
+                    `;
+                }
             },
             function (error) {
-                coordenadasDiv.innerHTML = "❌ Não foi possível obter sua localização.";
+                if (coordenadasDiv) {
+                    coordenadasDiv.innerHTML = "❌ Não foi possível obter sua localização.";
+                }
                 console.error("Erro ao obter localização:", error);
             }
         );
     } else {
-        coordenadasDiv.innerHTML = "⚠️ Geolocalização não suportada neste navegador.";
+        if (coordenadasDiv) {
+            coordenadasDiv.innerHTML = "⚠️ Geolocalização não suportada neste navegador.";
+        }
+    }
+
+    // ✅ Registro do Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(function (registration) {
+                console.log("✅ Service Worker registrado com sucesso:", registration.scope);
+            })
+            .catch(function (error) {
+                console.log("❌ Falha ao registrar Service Worker:", error);
+            });
     }
 };

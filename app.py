@@ -577,6 +577,14 @@ def pagina_config_admin():
 
     return render_template("config_admin.html", mensagem=mensagem)
 
+@app.route("/manifest.json")
+def manifest():
+    return send_file("static/manifest.json")
+
+@app.route("/service-worker.js")
+def service_worker():
+    return send_file("static/service-worker.js")
+
 
 @app.route("/logs")
 def pagina_logs():

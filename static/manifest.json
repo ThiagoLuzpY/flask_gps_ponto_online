@@ -1,11 +1,10 @@
 {
   "name": "Controle de Ponto",
   "short_name": "Ponto",
-  "start_url": "/",
+  "start_url": "/selecao_perfil",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0d6efd",
-  "orientation": "portrait",
   "icons": [
     {
       "src": "/static/icons/icon-192.png",
