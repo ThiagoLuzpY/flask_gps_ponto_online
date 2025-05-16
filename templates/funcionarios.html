@@ -56,6 +56,7 @@
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_cadastro') %}active{% endif %}" href="{{ url_for('pagina_cadastro') }}">Cadastrar Funcionário</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_logs') %}active{% endif %}" href="{{ url_for('pagina_logs') }}">Logs</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_graficos') %}active{% endif %}" href="{{ url_for('pagina_graficos') }}">Ver Gráficos</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_registros') %}active{% endif %}" href="{{ url_for('pagina_registros') }}">Registros</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_reset_senha') %}active{% endif %}" href="{{ url_for('pagina_reset_senha') }}">Resetar Senha</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_config_admin') %}active{% endif %}" href="{{ url_for('pagina_config_admin') }}">Configurações</a></li>
                 {% elif session["perfil"] == "funcionario" %}

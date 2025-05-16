@@ -4,6 +4,30 @@ window.onload = function () {
     const latitudeInput = document.getElementById("latitude");
     const longitudeInput = document.getElementById("longitude");
     const coordenadasDiv = document.getElementById("coordenadas");
+    const mapaDiv = document.getElementById("mapa-localizacao"); // Novo elemento opcional
+
+    function atualizarMapa(lat, lon) {
+        if (mapaDiv) {
+            mapaDiv.innerHTML = `
+                <div style="margin-top: 15px;">
+                    <iframe
+                        width="100%"
+                        height="250"
+                        style="border:0; border-radius:10px;"
+                        loading="lazy"
+                        allowfullscreen
+                        referrerpolicy="no-referrer-when-downgrade"
+                        src="https://www.google.com/maps?q=${lat},${lon}&hl=pt-BR&z=16&output=embed">
+                    </iframe>
+                    <div style="text-align:right; margin-top:5px;">
+                        <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            🔍 Abrir no Google Maps
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+    }
 
     if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -21,11 +45,14 @@ window.onload = function () {
                         Longitude: <code>${lon}</code>
                     `;
                 }
+
+                atualizarMapa(lat, lon); // ✅ Exibe o mapa automaticamente após detectar
             },
             function (error) {
                 if (coordenadasDiv) {
                     coordenadasDiv.innerHTML = "❌ Não foi possível obter sua localização.";
                 }
+                if (mapaDiv) mapaDiv.innerHTML = "";  // ❌ Oculta o mapa se falhar
                 console.error("Erro ao obter localização:", error);
             }
         );
@@ -33,6 +60,7 @@ window.onload = function () {
         if (coordenadasDiv) {
             coordenadasDiv.innerHTML = "⚠️ Geolocalização não suportada neste navegador.";
         }
+        if (mapaDiv) mapaDiv.innerHTML = "";
     }
 
     // ✅ Registro do Service Worker para PWA
@@ -46,3 +74,9 @@ window.onload = function () {
             });
     }
 };
+
+// ✅ Função global para abrir mapa externo no Google Maps (útil em popups ou botões)
+function abrirMapa(lat, lon) {
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    window.open(url, "_blank");
+}
