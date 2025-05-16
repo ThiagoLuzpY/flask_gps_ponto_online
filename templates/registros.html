@@ -123,8 +123,8 @@
                         <td>{{ data_hora }}</td>
                         <td>{{ lat }}</td>
                         <td>{{ long }}</td>
-                        <td><a href="#" onclick="abrirMapa({{ lat }}, {{ long }})">{{ endereco }}</a></td>
-                        <td><button class="btn btn-sm btn-outline-primary" onclick="abrirMapa({{ lat }}, {{ long }})">📍 Ver no Mapa</button></td>
+                        <td><a href="#" onclick="exibirMapaModal({{ lat }}, {{ long }})">{{ endereco }}</a></td>
+                        <td><button class="btn btn-sm btn-outline-primary" onclick="exibirMapaModal({{ lat }}, {{ long }})">📍 Ver no Mapa</button></td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -137,7 +137,7 @@
     <div id="mapa-conteudo">
         <div id="mapa-localizacao"></div>
         <div class="text-end mt-3">
-            <button class="btn btn-danger btn-sm" onclick="document.getElementById('mapa-modal').style.display='none'">Fechar</button>
+            <button class="btn btn-danger btn-sm" onclick="fecharMapa()">Fechar</button>
         </div>
     </div>
 </div>

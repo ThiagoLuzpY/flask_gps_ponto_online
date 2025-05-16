@@ -80,3 +80,36 @@ function abrirMapa(lat, lon) {
     const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
     window.open(url, "_blank");
 }
+
+function fecharMapa() {
+    const modal = document.getElementById('mapa-modal');
+    const mapaDiv = document.getElementById('mapa-localizacao');
+    if (modal && mapaDiv) {
+        modal.style.display = 'none';
+        mapaDiv.innerHTML = ""; // limpa o iframe anterior
+    }
+}
+
+function exibirMapaModal(lat, lon) {
+    const modal = document.getElementById('mapa-modal');
+    const mapaDiv = document.getElementById('mapa-localizacao');
+    if (modal && mapaDiv) {
+        mapaDiv.innerHTML = `
+            <iframe
+                width="100%"
+                height="350"
+                style="border:0; border-radius:10px;"
+                loading="lazy"
+                allowfullscreen
+                referrerpolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps?q=${lat},${lon}&hl=pt-BR&z=16&output=embed">
+            </iframe>
+            <div class="text-end mt-2">
+                <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    🔍 Abrir no Google Maps
+                </a>
+            </div>
+        `;
+        modal.style.display = 'flex';
+    }
+}
