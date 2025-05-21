@@ -6,25 +6,14 @@ function abrirMapa(lat, lon) {
     window.open(url, "_blank");
 }
 
-// ✅ Função para fechar o modal do mapa
-function fecharMapa() {
-    const modal = document.getElementById('mapa-modal');
-    const mapaDiv = document.getElementById('mapa-localizacao');
-    if (modal && mapaDiv) {
-        modal.style.display = 'none';
-        mapaDiv.innerHTML = ""; // limpa o iframe anterior
-    }
-}
-
-// ✅ Função para exibir o modal do mapa com localização
-function exibirMapaModal(lat, lon) {
-    const modal = document.getElementById('mapa-modal');
-    const mapaDiv = document.getElementById('mapa-localizacao');
-    if (modal && mapaDiv) {
-        mapaDiv.innerHTML = `
+// ✅ Nova função: exibir mapa na lateral
+function exibirMapaLateral(lat, lon) {
+    const mapaLateral = document.getElementById('mapa-lateral');
+    if (mapaLateral) {
+        mapaLateral.innerHTML = `
             <iframe
                 width="100%"
-                height="350"
+                height="300"
                 style="border:0; border-radius:10px;"
                 loading="lazy"
                 allowfullscreen
@@ -35,20 +24,29 @@ function exibirMapaModal(lat, lon) {
                 <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="btn btn-sm btn-outline-primary">
                     🔍 Abrir no Google Maps
                 </a>
+                <button class="btn btn-sm btn-danger ms-2" onclick="fecharMapaLateral()">Fechar</button>
             </div>
         `;
-        modal.style.display = 'flex';
+        mapaLateral.style.display = 'block';
     }
 }
 
-// ✅ Execução automática somente se for página com geolocalização (registro de ponto)
+// ✅ Função para fechar o mapa lateral
+function fecharMapaLateral() {
+    const mapaLateral = document.getElementById('mapa-lateral');
+    if (mapaLateral) {
+        mapaLateral.style.display = 'none';
+        mapaLateral.innerHTML = '';
+    }
+}
+
+// ✅ Execução automática só para página de registro
 window.onload = function () {
     const latitudeInput = document.getElementById("latitude");
     const longitudeInput = document.getElementById("longitude");
     const coordenadasDiv = document.getElementById("coordenadas");
     const mapaDiv = document.getElementById("mapa-localizacao");
 
-    // ✅ Executa localização apenas se existirem elementos típicos da tela de registro
     if (latitudeInput && longitudeInput && coordenadasDiv) {
         function atualizarMapa(lat, lon) {
             if (mapaDiv) {
