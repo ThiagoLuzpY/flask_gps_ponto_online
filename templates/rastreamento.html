@@ -2,44 +2,28 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cadastro de Funcionário</title>
+    <title>Rastreamento de Funcionários</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- ✅ PWA: Manifesto -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-
-    <!-- ✅ PWA: Ícones -->
-    <link rel="icon" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}">
-    <link rel="apple-touch-icon" sizes="512x512" href="{{ url_for('static', filename='icons/icon-512.png') }}">
-
-    <!-- ✅ PWA: Cor e modo standalone -->
-    <meta name="theme-color" content="#0d6efd">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-
-    <!-- Bootstrap CSS -->
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"/>
 
     <style>
         body {
-            background-color: #f6f7f9;
+            padding-top: 80px; /* Espaço para o navbar */
         }
-        .form-container {
-            max-width: 600px;
-            margin: 100px auto;
-            background: white;
-            padding: 30px;
+        #map {
+            height: 500px;
             border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            margin-top: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
 
-<!-- Navbar -->
+<!-- ✅ Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="{{ url_for('index') }}">📍 Controle de Ponto</a>
@@ -69,44 +53,59 @@
     </div>
 </nav>
 
-<!-- Formulário -->
-<div class="form-container">
-    <h4 class="mb-4 text-center"><i class="bi bi-person-plus-fill"></i> Cadastro de Funcionário</h4>
+<div class="container mt-4">
+    <h3 class="text-center mb-4"><i class="bi bi-map"></i> Rastreamento de Funcionários</h3>
 
-    {% if mensagem %}
-        <div class="alert alert-info text-center">{{ mensagem }}</div>
-    {% endif %}
+    <form method="get" action="/rastreamento" class="row g-3">
+        <div class="col-md-5">
+            <label class="form-label">Funcionário:</label>
+            <select name="funcionario_id" class="form-select" required>
+                <option value="">Selecione</option>
+                {% for f in funcionarios %}
+                <option value="{{ f.id }}" {% if request.args.get('funcionario_id') == f.id|string %}selected{% endif %}>{{ f.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <form method="POST">
-        <div class="mb-3">
-            <label for="nome" class="form-label">Nome:</label>
-            <input type="text" class="form-control" id="nome" name="nome" required>
+        <div class="col-md-5">
+            <label class="form-label">Data:</label>
+            <input type="date" name="data" class="form-control" value="{{ request.args.get('data', '') }}" required>
         </div>
-        <div class="mb-3">
-            <label for="sobrenome" class="form-label">Sobrenome:</label>
-            <input type="text" class="form-control" id="sobrenome" name="sobrenome" required>
+
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Consultar</button>
         </div>
-        <div class="mb-3">
-            <label for="telefone" class="form-label">Telefone:</label>
-            <input type="text" class="form-control" id="telefone" name="telefone" required placeholder="(DDD) 90000-0000">
-        </div>
-        <div class="mb-3">
-            <label for="data_nascimento" class="form-label">Data de Nascimento:</label>
-            <input type="date" class="form-control" id="data_nascimento" name="data_nascimento" required>
-        </div>
-        <div class="mb-3">
-            <label for="senha" class="form-label">Senha:</label>
-            <input type="password" class="form-control" id="senha" name="senha" required>
-        </div>
-        <div class="mb-3">
-            <label for="confirmar_senha" class="form-label">Confirmar Senha:</label>
-            <input type="password" class="form-control" id="confirmar_senha" name="confirmar_senha" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Cadastrar Funcionário</button>
     </form>
+
+    {% if pontos %}
+        <div id="map"></div>
+    {% else %}
+        <div class="alert alert-info mt-4">Nenhum ponto encontrado para os filtros selecionados.</div>
+    {% endif %}
 </div>
 
-<!-- Bootstrap JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    const pontos = {{ pontos|tojson }};
+
+    if (pontos.length > 0) {
+        const map = L.map('map').setView([pontos[0].lat, pontos[0].lng], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const polyline = L.polyline(pontos.map(p => [p.lat, p.lng]), {color: 'blue'}).addTo(map);
+        map.fitBounds(polyline.getBounds());
+
+        const start = pontos[0];
+        const end = pontos[pontos.length - 1];
+
+        L.marker([start.lat, start.lng]).addTo(map).bindPopup('Início').openPopup();
+        L.marker([end.lat, end.lng]).addTo(map).bindPopup('Fim');
+    }
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

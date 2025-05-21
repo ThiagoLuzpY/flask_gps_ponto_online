@@ -67,6 +67,15 @@ def criar_tabelas():
         hash_senha = generate_password_hash("MC1234")
         cur.execute("INSERT INTO config_admin (id, nome, senha_hash) VALUES (1, 'admin', ?)", (hash_senha,))
 
+    cur.execute('''CREATE TABLE IF NOT EXISTS rastreamento (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_funcionario INTEGER NOT NULL,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (id_funcionario) REFERENCES funcionarios(id) ON DELETE CASCADE
+    )''')
+
     con.commit()
     con.close()
 
@@ -584,6 +593,70 @@ def manifest():
 @app.route("/service-worker.js")
 def service_worker():
     return send_file("static/service-worker.js")
+
+
+@app.route('/api/rastreamento', methods=['POST'])
+def receber_rastreamento():
+    if session.get("perfil") != "funcionario":
+        return redirect(url_for("index"))
+
+    if not request.is_json:
+        return jsonify({'status': 'error', 'message': 'Invalid Content-Type'}), 400
+
+    dados = request.json
+    id_funcionario = dados.get('id_funcionario')
+
+    if session.get('id') != id_funcionario:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    latitude = dados.get('latitude')
+    longitude = dados.get('longitude')
+    timestamp = dados.get('timestamp')
+
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
+    cur = con.cursor()
+
+    cur.execute('''
+        INSERT INTO rastreamento (id_funcionario, latitude, longitude, timestamp)
+        VALUES (?, ?, ?, ?)
+    ''', (id_funcionario, latitude, longitude, timestamp))
+
+    con.commit()
+    con.close()
+
+    return jsonify({'status': 'ok'})
+
+@app.route('/rastreamento')
+def visualizar_rastreamento():
+    if session.get("perfil") != "admin":
+        return redirect(url_for("index"))
+
+    id_func = request.args.get('funcionario_id')
+    data = request.args.get('data')
+
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
+    cur = con.cursor()
+
+    if id_func and data:
+        cur.execute('''
+            SELECT latitude, longitude
+            FROM rastreamento
+            WHERE id_funcionario = ? AND DATE(timestamp) = ?
+            ORDER BY timestamp ASC
+        ''', (id_func, data))
+        pontos = [{'lat': row[0], 'lng': row[1]} for row in cur.fetchall()]
+    else:
+        pontos = []
+
+    cur.execute('SELECT id, nome FROM funcionarios')
+    funcionarios = cur.fetchall()
+
+    con.close()
+
+    return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios)
+
 
 
 @app.route("/logs")

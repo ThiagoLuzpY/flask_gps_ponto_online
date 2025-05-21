@@ -11,6 +11,7 @@
 
     <!-- 🔄 Script JavaScript do sistema -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='rastreamento.js') }}"></script>
 
     <!-- ✅ PWA - Manifesto do app -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -67,6 +68,7 @@
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_logs') %}active{% endif %}" href="{{ url_for('pagina_logs') }}">Logs</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_graficos') %}active{% endif %}" href="{{ url_for('pagina_graficos') }}">Ver Gráficos</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_registros') %}active{% endif %}" href="{{ url_for('pagina_registros') }}">Registros</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('visualizar_rastreamento') %}active{% endif %}" href="{{ url_for('visualizar_rastreamento') }}">Rastreamento</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_reset_senha') %}active{% endif %}" href="{{ url_for('pagina_reset_senha') }}">Resetar Senha</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_config_admin') %}active{% endif %}" href="{{ url_for('pagina_config_admin') }}">Configurações</a></li>
                 {% elif session["perfil"] == "funcionario" %}
@@ -84,6 +86,11 @@
 <!-- Formulário -->
 <div class="form-container">
     <h4 class="mb-4 text-center"><i class="bi bi-geo-alt-fill"></i> Registrar Ponto com Autenticação</h4>
+
+    <!-- ✅ Botão para ativar rastreamento contínuo -->
+    <div class="mb-3">
+        <button class="btn btn-success w-100" onclick="iniciarRastreamentoPrompt()">✅ Ativar Rastreamento Contínuo</button>
+    </div>
 
     <form method="POST" onsubmit="return obterCoordenadas();">
         <div class="mb-3">
@@ -127,7 +134,6 @@
                 Endereço: <a href="#" onclick="abrirMapa('{{ latitude }}', '{{ longitude }}')">{{ endereco }}</a>
             </div>
 
-            <!-- Mapa Embutido -->
             <div class="mt-3" id="mapa-localizacao" style="height: 300px; border-radius: 12px; overflow: hidden;">
                 <iframe
                     width="100%"
@@ -140,7 +146,6 @@
                 </iframe>
             </div>
 
-            <!-- Botão para abrir no Google Maps -->
             <div class="mt-2 text-center">
                 <a class="btn btn-outline-primary btn-sm" target="_blank" href="https://www.google.com/maps?q={{ latitude }},{{ longitude }}">
                     Abrir no Google Maps <i class="bi bi-box-arrow-up-right"></i>
@@ -167,6 +172,27 @@
             alert("Geolocalização não suportada.");
         }
         return false;
+    }
+
+    function iniciarRastreamentoPrompt() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                () => {
+                    const funcionarioNome = document.getElementById("nome").value;
+                    if (!funcionarioNome) {
+                        alert("Por favor, selecione seu nome antes de ativar o rastreamento.");
+                        return;
+                    }
+                    iniciarRastreamento(funcionarioNome);
+                    alert("✅ Rastreamento ativado! Mantenha o app aberto.");
+                },
+                (err) => {
+                    alert("Erro ao obter permissão de localização.");
+                }
+            );
+        } else {
+            alert("Geolocalização não suportada.");
+        }
     }
 </script>
 
