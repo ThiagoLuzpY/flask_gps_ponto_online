@@ -4,7 +4,9 @@ window.onload = function () {
     const latitudeInput = document.getElementById("latitude");
     const longitudeInput = document.getElementById("longitude");
     const coordenadasDiv = document.getElementById("coordenadas");
-    const mapaDiv = document.getElementById("mapa-localizacao"); // Novo elemento opcional
+    const mapaDiv = document.getElementById("mapa-localizacao");
+
+    const bodyId = document.body.id;
 
     function atualizarMapa(lat, lon) {
         if (mapaDiv) {
@@ -29,38 +31,41 @@ window.onload = function () {
         }
     }
 
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            function (position) {
-                const lat = position.coords.latitude.toFixed(6);
-                const lon = position.coords.longitude.toFixed(6);
+    // ✅ Só executar geolocalização e auto-mapa na página de REGISTRO DE PONTO!
+    if (bodyId === 'pagina-registro') {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
 
-                if (latitudeInput) latitudeInput.value = lat;
-                if (longitudeInput) longitudeInput.value = lon;
+                    if (latitudeInput) latitudeInput.value = lat;
+                    if (longitudeInput) longitudeInput.value = lon;
 
-                if (coordenadasDiv) {
-                    coordenadasDiv.innerHTML = `
-                        📌 <strong>Localização detectada:</strong><br>
-                        Latitude: <code>${lat}</code><br>
-                        Longitude: <code>${lon}</code>
-                    `;
+                    if (coordenadasDiv) {
+                        coordenadasDiv.innerHTML = `
+                            📌 <strong>Localização detectada:</strong><br>
+                            Latitude: <code>${lat}</code><br>
+                            Longitude: <code>${lon}</code>
+                        `;
+                    }
+
+                    atualizarMapa(lat, lon);
+                },
+                function (error) {
+                    if (coordenadasDiv) {
+                        coordenadasDiv.innerHTML = "❌ Não foi possível obter sua localização.";
+                    }
+                    if (mapaDiv) mapaDiv.innerHTML = "";
+                    console.error("Erro ao obter localização:", error);
                 }
-
-                atualizarMapa(lat, lon); // ✅ Exibe o mapa automaticamente após detectar
-            },
-            function (error) {
-                if (coordenadasDiv) {
-                    coordenadasDiv.innerHTML = "❌ Não foi possível obter sua localização.";
-                }
-                if (mapaDiv) mapaDiv.innerHTML = "";  // ❌ Oculta o mapa se falhar
-                console.error("Erro ao obter localização:", error);
+            );
+        } else {
+            if (coordenadasDiv) {
+                coordenadasDiv.innerHTML = "⚠️ Geolocalização não suportada neste navegador.";
             }
-        );
-    } else {
-        if (coordenadasDiv) {
-            coordenadasDiv.innerHTML = "⚠️ Geolocalização não suportada neste navegador.";
+            if (mapaDiv) mapaDiv.innerHTML = "";
         }
-        if (mapaDiv) mapaDiv.innerHTML = "";
     }
 
     // ✅ Registro do Service Worker para PWA
@@ -75,12 +80,13 @@ window.onload = function () {
     }
 };
 
-// ✅ Função global para abrir mapa externo no Google Maps (útil em popups ou botões)
+// ✅ Função global para abrir mapa externo no Google Maps
 function abrirMapa(lat, lon) {
     const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
     window.open(url, "_blank");
 }
 
+// ✅ Função para fechar o modal do mapa
 function fecharMapa() {
     const modal = document.getElementById('mapa-modal');
     const mapaDiv = document.getElementById('mapa-localizacao');
@@ -90,6 +96,7 @@ function fecharMapa() {
     }
 }
 
+// ✅ Função para exibir o modal do mapa com localização
 function exibirMapaModal(lat, lon) {
     const modal = document.getElementById('mapa-modal');
     const mapaDiv = document.getElementById('mapa-localizacao');
