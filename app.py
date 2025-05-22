@@ -640,6 +640,7 @@ def visualizar_rastreamento():
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
 
+    # Consulta pontos de rastreamento
     if id_func and data:
         cur.execute('''
             SELECT latitude, longitude
@@ -651,13 +652,13 @@ def visualizar_rastreamento():
     else:
         pontos = []
 
-    cur.execute('SELECT id, nome FROM funcionarios')
-    funcionarios = cur.fetchall()
+    # Consulta funcionários com nome + sobrenome
+    cur.execute('SELECT id, nome, sobrenome FROM funcionarios ORDER BY nome ASC')
+    funcionarios = [{'id': row[0], 'nome_completo': f"{row[1]} {row[2]}"} for row in cur.fetchall()]
 
     con.close()
 
     return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios)
-
 
 
 @app.route("/logs")

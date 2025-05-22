@@ -62,7 +62,7 @@
             <select name="funcionario_id" class="form-select" required>
                 <option value="">Selecione</option>
                 {% for f in funcionarios %}
-                <option value="{{ f.id }}" {% if request.args.get('funcionario_id') == f.id|string %}selected{% endif %}>{{ f.nome }}</option>
+                <option value="{{ f.id }}" {% if request.args.get('funcionario_id') == f.id|string %}selected{% endif %}>{{ f.nome_completo }}</option>
                 {% endfor %}
             </select>
         </div>
