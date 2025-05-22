@@ -98,7 +98,7 @@
             <select class="form-select" id="nome" name="nome" required>
                 <option value="">Selecione seu nome</option>
                 {% for funcionario in funcionarios %}
-                    <option value="{{ funcionario }}">{{ funcionario }}</option>
+                    <option value="{{ funcionario.id }}">{{ funcionario.nome }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -178,12 +178,12 @@
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 () => {
-                    const funcionarioNome = document.getElementById("nome").value;
-                    if (!funcionarioNome) {
+                    const funcionarioId = document.getElementById("nome").value;
+                    if (!funcionarioId) {
                         alert("Por favor, selecione seu nome antes de ativar o rastreamento.");
                         return;
                     }
-                    iniciarRastreamento(funcionarioNome);
+                    iniciarRastreamento(parseInt(funcionarioId));
                     alert("✅ Rastreamento ativado! Mantenha o app aberto.");
                 },
                 (err) => {
