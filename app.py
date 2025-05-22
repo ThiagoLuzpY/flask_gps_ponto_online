@@ -531,14 +531,16 @@ def login_funcionario():
 
         con = sqlite3.connect(DB_PATH)
         cur = con.cursor()
-        cur.execute("SELECT senha_hash FROM funcionarios WHERE nome = ? AND sobrenome = ?", (nome, sobrenome))
+        cur.execute("SELECT id, senha_hash FROM funcionarios WHERE nome = ? AND sobrenome = ?", (nome, sobrenome))
         row = cur.fetchone()
         con.close()
 
-        if row and check_password_hash(row[0], senha):
+        if row and check_password_hash(row[1], senha):
             session["perfil"] = "funcionario"
             session["nome_funcionario"] = nome_completo
             session["nome"] = nome_completo  # ✅ garante compatibilidade com o index.html
+            session["id"] = row[0]  # ✅ ESSENCIAL para rastreamento!
+
             return redirect(url_for("pagina_registro_ponto"))
         else:
             mensagem = "❌ Nome ou senha inválidos."
