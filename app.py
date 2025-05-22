@@ -601,21 +601,17 @@ def service_worker():
 
 @app.route('/api/rastreamento', methods=['POST'])
 def receber_rastreamento():
-    if session.get("perfil") != "funcionario":
-        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
-
     if not request.is_json:
         return jsonify({'status': 'error', 'message': 'Invalid Content-Type'}), 400
 
     dados = request.json
     id_funcionario = dados.get('id_funcionario')
-
-    if session.get('id') != id_funcionario:
-        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
-
     latitude = dados.get('latitude')
     longitude = dados.get('longitude')
     timestamp = dados.get('timestamp')
+
+    if not all([id_funcionario, latitude, longitude, timestamp]):
+        return jsonify({'status': 'error', 'message': 'Missing data'}), 400
 
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
@@ -630,6 +626,7 @@ def receber_rastreamento():
     con.close()
 
     return jsonify({'status': 'ok'})
+
 
 @app.route('/rastreamento')
 def visualizar_rastreamento():
