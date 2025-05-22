@@ -538,14 +538,15 @@ def login_funcionario():
         if row and check_password_hash(row[1], senha):
             session["perfil"] = "funcionario"
             session["nome_funcionario"] = nome_completo
-            session["nome"] = nome_completo  # ✅ garante compatibilidade com o index.html
-            session["id"] = row[0]  # ✅ ESSENCIAL para rastreamento!
+            session["nome"] = nome_completo  # ✅ mantém compatibilidade para exibir nome
+            session["id"] = row[0]  # ✅ ESSENCIAL: ID do funcionário para rastreamento
 
             return redirect(url_for("pagina_registro_ponto"))
         else:
             mensagem = "❌ Nome ou senha inválidos."
 
     return render_template("login_funcionario.html", mensagem=mensagem, funcionarios=funcionarios)
+
 
 
 @app.route("/logout")
@@ -601,7 +602,7 @@ def service_worker():
 @app.route('/api/rastreamento', methods=['POST'])
 def receber_rastreamento():
     if session.get("perfil") != "funcionario":
-        return redirect(url_for("index"))
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
 
     if not request.is_json:
         return jsonify({'status': 'error', 'message': 'Invalid Content-Type'}), 400
