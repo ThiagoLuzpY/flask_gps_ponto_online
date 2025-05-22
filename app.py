@@ -538,6 +538,7 @@ def login_funcionario():
         if row and check_password_hash(row[0], senha):
             session["perfil"] = "funcionario"
             session["nome_funcionario"] = nome_completo
+            session["nome"] = nome_completo  # ✅ garante compatibilidade com o index.html
             return redirect(url_for("pagina_registro_ponto"))
         else:
             mensagem = "❌ Nome ou senha inválidos."
