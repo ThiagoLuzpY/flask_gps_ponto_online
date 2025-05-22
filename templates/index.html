@@ -88,8 +88,8 @@
     <form method="POST" onsubmit="return obterCoordenadas();">
         <div class="mb-3">
             <label class="form-label">Funcionário:</label>
-            <input type="hidden" id="nome" name="nome" value="{{ session['usuario'] }}">
-            <p class="form-control-plaintext fw-bold">{{ session['usuario'] }}</p>
+            <p class="form-control-plaintext fw-bold">{{ session['nome_funcionario'] }}</p>
+            <input type="hidden" name="nome" value="{{ session['nome_funcionario'] }}">
         </div>
 
         <div class="mb-3">
