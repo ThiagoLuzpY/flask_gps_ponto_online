@@ -11,7 +11,6 @@
 
     <!-- 🔄 Script JavaScript do sistema -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script src="{{ url_for('static', filename='rastreamento.js') }}"></script>
 
     <!-- ✅ PWA - Manifesto do app -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -31,7 +30,6 @@
         }
     </script>
 
-    <!-- 🎨 Estilo local -->
     <style>
         body {
             background-color: #f6f7f9;
@@ -87,20 +85,11 @@
 <div class="form-container">
     <h4 class="mb-4 text-center"><i class="bi bi-geo-alt-fill"></i> Registrar Ponto com Autenticação</h4>
 
-    <!-- ✅ Botão para ativar rastreamento contínuo -->
-    <div class="mb-3">
-        <button class="btn btn-success w-100" onclick="iniciarRastreamentoPrompt()">✅ Ativar Rastreamento Contínuo</button>
-    </div>
-
     <form method="POST" onsubmit="return obterCoordenadas();">
         <div class="mb-3">
-            <label for="nome" class="form-label">Funcionário:</label>
-            <select class="form-select" id="nome" name="nome" required>
-                <option value="">Selecione seu nome</option>
-                {% for funcionario in funcionarios %}
-                    <option value="{{ funcionario.id }}">{{ funcionario.nome }}</option>
-                {% endfor %}
-            </select>
+            <label class="form-label">Funcionário:</label>
+            <p class="form-control-plaintext fw-bold">{{ session['nome'] }}</p>
+            <input type="hidden" name="nome" value="{{ session['nome'] }}">
         </div>
         <div class="mb-3">
             <label for="senha" class="form-label">Senha:</label>
@@ -174,26 +163,29 @@
         return false;
     }
 
-    function iniciarRastreamentoPrompt() {
+    // ✅ Rastreamento automático contínuo
+    document.addEventListener("DOMContentLoaded", () => {
         if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                () => {
-                    const funcionarioId = document.getElementById("nome").value;
-                    if (!funcionarioId) {
-                        alert("Por favor, selecione seu nome antes de ativar o rastreamento.");
-                        return;
-                    }
-                    iniciarRastreamento(parseInt(funcionarioId));
-                    alert("✅ Rastreamento ativado! Mantenha o app aberto.");
+            const funcionarioId = {{ session['id'] }};
+            navigator.geolocation.watchPosition(
+                position => {
+                    const dados = {
+                        id_funcionario: funcionarioId,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        timestamp: new Date().toISOString()
+                    };
+                    fetch('/api/rastreamento', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dados)
+                    });
                 },
-                (err) => {
-                    alert("Erro ao obter permissão de localização.");
-                }
+                error => console.error('Erro no rastreamento:', error),
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
-        } else {
-            alert("Geolocalização não suportada.");
         }
-    }
+    });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
