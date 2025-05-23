@@ -629,12 +629,12 @@ def receber_rastreamento():
     con.close()
 
     # ✅ Emit backend para atualizar todos clientes em tempo real
-    socketio.emit('atualizar_localizacao', {
+    socketio.emit('status_atualizado', {
         'id_funcionario': id_funcionario,
         'latitude': latitude,
         'longitude': longitude,
         'timestamp': timestamp
-    })
+    }, broadcast=True)
 
     return jsonify({'status': 'ok'})
 

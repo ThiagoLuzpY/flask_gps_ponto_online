@@ -75,7 +75,7 @@ function pararRastreamento() {
 
 const socket = io();  // ✅ Conecta ao servidor Socket.IO
 
-socket.on('location_update', function(data) {
+socket.on('status_atualizado', function(dados) {
     const { id_funcionario, nome, lat, lng, status } = data;
 
     // Define a cor do marcador: verde online, vermelho offline
