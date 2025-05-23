@@ -620,6 +620,16 @@ def receber_rastreamento():
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
 
+    # ✅ Buscar nome e sobrenome para formar nome_completo
+    cur.execute('SELECT nome, sobrenome FROM funcionarios WHERE id = ?', (id_funcionario,))
+    row = cur.fetchone()
+
+    if row:
+        nome_completo = f"{row[0]} {row[1]}"
+    else:
+        nome_completo = "Desconhecido"
+
+    # ✅ Inserir rastreamento
     cur.execute('''
         INSERT INTO rastreamento (id_funcionario, latitude, longitude, timestamp)
         VALUES (?, ?, ?, ?)
@@ -628,11 +638,16 @@ def receber_rastreamento():
     con.commit()
     con.close()
 
-    # ✅ Emit backend para atualizar todos clientes em tempo real
+    # ✅ Definir status como 'online'
+    status = "online"
+
+    # ✅ Emitir atualização para todos clientes
     socketio.emit('status_atualizado', {
         'id_funcionario': id_funcionario,
-        'latitude': latitude,
-        'longitude': longitude,
+        'nome': nome_completo,
+        'lat': latitude,
+        'lng': longitude,
+        'status': status,
         'timestamp': timestamp
     }, broadcast=True)
 
