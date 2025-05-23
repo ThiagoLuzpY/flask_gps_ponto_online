@@ -97,7 +97,7 @@ socket.on('location_update', function(data) {
                 iconSize: [21, 34],
                 iconAnchor: [10, 34]
             })
-        }).addTo(map).bindPopup(`${nome} (${status})`);
+        }).addTo(mapaTempoReal).bindPopup(`${nome} (${status})`);
 
         marcadores[id_funcionario] = marcador;
     }

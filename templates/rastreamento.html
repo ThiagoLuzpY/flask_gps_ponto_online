@@ -76,6 +76,8 @@
             <button type="submit" class="btn btn-primary w-100">Consultar</button>
         </div>
     </form>
+    <h4 class="mt-5">🟢 Mapa de Rastreamento em Tempo Real</h4>
+    <div id="mapaTempoReal" style="height: 500px; border-radius: 12px; margin-top: 20px; box-shadow: 0 0 15px rgba(0,0,0,0.1);"></div>
 
     {% if pontos %}
         <div id="map"></div>
@@ -88,6 +90,10 @@
 <script>
     const pontos = {{ pontos|tojson }};
     let map;
+    const mapaTempoReal = L.map('mapaTempoReal').setView([-22.9, -43.2], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapaTempoReal);
 
     if (pontos.length > 0) {
         map = L.map('map').setView([pontos[0].lat, pontos[0].lng], 13);
@@ -127,7 +133,7 @@
         } else {
             marcadores[dados.id_funcionario] = L.marker([dados.lat, dados.lng], {
                 icon: getIcon(dados.status)
-            }).addTo(map).bindPopup(`${dados.nome} - ${dados.status}`);
+            }).addTo(mapaTempoReal).bindPopup(`${dados.nome} - ${dados.status}`);
         }
     });
 
