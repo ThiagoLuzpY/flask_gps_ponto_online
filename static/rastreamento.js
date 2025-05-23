@@ -73,32 +73,33 @@ function pararRastreamento() {
 
 // ✅ Socket.IO: escutando atualizações em tempo real e atualizando marcadores
 
-const socket = io();  // ✅ Conecta ao servidor Socket.IO
+function configurarSocket(mapaTempoReal) {
+    const socket = io();  // ✅ Conecta ao servidor Socket.IO
 
-socket.on('status_atualizado', function(dados) {
-    const { id_funcionario, nome, lat, lng, status } = dados;
+    socket.on('status_atualizado', function(dados) {
+        const { id_funcionario, nome, lat, lng, status } = dados;
 
-    const cor = status === 'online' ? 'green' : 'red';
+        const cor = status === 'online' ? 'green' : 'red';
 
-    if (marcadores[id_funcionario]) {
-        marcadores[id_funcionario].setLatLng([lat, lng]);
-        marcadores[id_funcionario].setIcon(L.icon({
-            iconUrl: `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=•|${cor}`,
-            iconSize: [21, 34],
-            iconAnchor: [10, 34]
-        }));
-    } else {
-        const marcador = L.marker([lat, lng], {
-            icon: L.icon({
+        if (marcadores[id_funcionario]) {
+            marcadores[id_funcionario].setLatLng([lat, lng]);
+            marcadores[id_funcionario].setIcon(L.icon({
                 iconUrl: `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=•|${cor}`,
                 iconSize: [21, 34],
                 iconAnchor: [10, 34]
-            })
-        }).addTo(mapaTempoReal).bindPopup(`${nome} (${status})`);
+            }));
+        } else {
+            const marcador = L.marker([lat, lng], {
+                icon: L.icon({
+                    iconUrl: `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=•|${cor}`,
+                    iconSize: [21, 34],
+                    iconAnchor: [10, 34]
+                })
+            }).addTo(mapaTempoReal).bindPopup(`${nome} (${status})`);
 
-        marcadores[id_funcionario] = marcador;
-    }
+            marcadores[id_funcionario] = marcador;
+        }
 
-    console.log(`📡 Atualização recebida: ${nome} está ${status} em (${lat}, ${lng})`);
-});
-
+        console.log(`📡 Atualização recebida: ${nome} está ${status} em (${lat}, ${lng})`);
+    });
+}

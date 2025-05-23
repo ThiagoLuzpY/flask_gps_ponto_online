@@ -616,6 +616,7 @@ def receber_rastreamento():
     if not all([id_funcionario, latitude, longitude, timestamp]):
         return jsonify({'status': 'error', 'message': 'Missing data'}), 400
 
+    # ✅ Grava no banco para histórico
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
@@ -625,7 +626,7 @@ def receber_rastreamento():
         VALUES (?, ?, ?, ?)
     ''', (id_funcionario, latitude, longitude, timestamp))
 
-    # ✅ Buscar nome + sobrenome
+    # ✅ Busca nome completo para emitir ao vivo
     cur.execute("SELECT nome, sobrenome FROM funcionarios WHERE id = ?", (id_funcionario,))
     row = cur.fetchone()
     nome_completo = f"{row[0]} {row[1]}" if row else "Desconhecido"
@@ -633,9 +634,10 @@ def receber_rastreamento():
     con.commit()
     con.close()
 
+    # ✅ Define status sempre como online
     status = 'online'
 
-    # ✅ Emit backend para atualizar todos clientes em tempo real
+    # ✅ Emit para todos clientes: socketio gerando mapa em tempo real
     socketio.emit('status_atualizado', {
         'id_funcionario': id_funcionario,
         'nome': nome_completo,
@@ -646,8 +648,6 @@ def receber_rastreamento():
     }, broadcast=True)
 
     return jsonify({'status': 'ok'})
-
-
 
 @app.route('/rastreamento')
 def visualizar_rastreamento():
@@ -680,47 +680,6 @@ def visualizar_rastreamento():
     con.close()
 
     return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios)
-
-
-@app.route('/atualizar_status', methods=['POST'])
-def atualizar_status():
-    if not request.is_json:
-        return jsonify({'status': 'error', 'message': 'Invalid JSON'}), 400
-
-    dados = request.json
-    id_func = dados.get('id_funcionario')
-    status = dados.get('status')
-    lat = dados.get('latitude')
-    lng = dados.get('longitude')
-
-    if not all([id_func, status, lat, lng]):
-        return jsonify({'status': 'error', 'message': 'Dados incompletos'}), 400
-
-    con = sqlite3.connect(DB_PATH)
-    con.execute("PRAGMA foreign_keys = ON")
-    cur = con.cursor()
-    cur.execute("SELECT nome, sobrenome FROM funcionarios WHERE id = ?", (id_func,))
-    row = cur.fetchone()
-    con.close()
-
-    if not row:
-        return jsonify({'status': 'error', 'message': 'Funcionário não encontrado'}), 404
-
-    nome_completo = f"{row[0]} {row[1]}"
-
-    online_status[id_func] = {
-        "nome": nome_completo,
-        "status": status,
-        "lat": lat,
-        "lng": lng,
-        "timestamp": datetime.now().isoformat()
-    }
-
-    # 🚀 Enviar atualização em tempo real via Socket.IO
-    socketio.emit('status_atualizado', online_status[id_func], broadcast=True)
-
-    return jsonify({'status': 'ok'})
-
 
 
 @app.route("/logs")
