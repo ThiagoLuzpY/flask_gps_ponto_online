@@ -7,11 +7,14 @@ import plotly.express as px
 import csv
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__, static_url_path='/static')  # ✅ Garante caminho correto para PWA
+socketio = SocketIO(app, cors_allowed_origins="*")
 app.secret_key = "segredo_super_secreto_123"
 DB_PATH = "/home/ThiagoLuz/flask_gps_ponto_online/loja.db"
 OPENCAGE_API_KEY = "c9aac9c2ac4b468fbd700c9dc1489763"
+online_status = {}
 
 # ---------- Funções de Inicialização ----------
 def criar_tabelas():
@@ -625,6 +628,14 @@ def receber_rastreamento():
     con.commit()
     con.close()
 
+    # ✅ Emit backend para atualizar todos clientes em tempo real
+    socketio.emit('atualizar_localizacao', {
+        'id_funcionario': id_funcionario,
+        'latitude': latitude,
+        'longitude': longitude,
+        'timestamp': timestamp
+    })
+
     return jsonify({'status': 'ok'})
 
 
@@ -659,6 +670,47 @@ def visualizar_rastreamento():
     con.close()
 
     return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios)
+
+
+@app.route('/atualizar_status', methods=['POST'])
+def atualizar_status():
+    if not request.is_json:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON'}), 400
+
+    dados = request.json
+    id_func = dados.get('id_funcionario')
+    status = dados.get('status')
+    lat = dados.get('latitude')
+    lng = dados.get('longitude')
+
+    if not all([id_func, status, lat, lng]):
+        return jsonify({'status': 'error', 'message': 'Dados incompletos'}), 400
+
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
+    cur = con.cursor()
+    cur.execute("SELECT nome, sobrenome FROM funcionarios WHERE id = ?", (id_func,))
+    row = cur.fetchone()
+    con.close()
+
+    if not row:
+        return jsonify({'status': 'error', 'message': 'Funcionário não encontrado'}), 404
+
+    nome_completo = f"{row[0]} {row[1]}"
+
+    online_status[id_func] = {
+        "nome": nome_completo,
+        "status": status,
+        "lat": lat,
+        "lng": lng,
+        "timestamp": datetime.now().isoformat()
+    }
+
+    # 🚀 Enviar atualização em tempo real via Socket.IO
+    socketio.emit('status_atualizado', online_status[id_func], broadcast=True)
+
+    return jsonify({'status': 'ok'})
+
 
 
 @app.route("/logs")
@@ -707,4 +759,4 @@ if __name__ == "__main__":
     if not is_running_from_reloader():
         Timer(1, abrir_navegador).start()
 
-    app.run(debug=True)
+    socketio.run(app, debug=True, host="0.0.0.0", port=5000)

@@ -87,15 +87,16 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
     const pontos = {{ pontos|tojson }};
+    let map;
 
     if (pontos.length > 0) {
-        const map = L.map('map').setView([pontos[0].lat, pontos[0].lng], 13);
+        map = L.map('map').setView([pontos[0].lat, pontos[0].lng], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        const polyline = L.polyline(pontos.map(p => [p.lat, p.lng]), {color: 'blue'}).addTo(map);
+        const polyline = L.polyline(pontos.map(p => [p.lat, p.lng]), { color: 'blue' }).addTo(map);
         map.fitBounds(polyline.getBounds());
 
         const start = pontos[0];
@@ -103,9 +104,45 @@
 
         L.marker([start.lat, start.lng]).addTo(map).bindPopup('Início').openPopup();
         L.marker([end.lat, end.lng]).addTo(map).bindPopup('Fim');
+    } else {
+        map = L.map('map').setView([-22.9, -43.2], 12);  // fallback se não houver pontos
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+    }
+
+    // ✅ Parte Socket.IO — Tempo real
+    const socket = io();
+
+    let statusFuncionarios = {};
+    let marcadores = {};
+
+    socket.on('status_atualizado', (dados) => {
+        console.log("🔔 Status atualizado recebido:", dados);
+        statusFuncionarios[dados.id_funcionario] = dados;
+
+        if (marcadores[dados.id_funcionario]) {
+            marcadores[dados.id_funcionario].setLatLng([dados.lat, dados.lng]);
+            marcadores[dados.id_funcionario].setIcon(getIcon(dados.status));
+        } else {
+            marcadores[dados.id_funcionario] = L.marker([dados.lat, dados.lng], {
+                icon: getIcon(dados.status)
+            }).addTo(map).bindPopup(`${dados.nome} - ${dados.status}`);
+        }
+    });
+
+    function getIcon(status) {
+        const color = status === "online" ? "green" : "red";
+        return L.icon({
+            iconUrl: `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
     }
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
 </body>
 </html>

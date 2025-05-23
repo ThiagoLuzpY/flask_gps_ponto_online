@@ -1,3 +1,5 @@
+let marcadores = {};  // ✅ Objeto global para armazenar marcadores de cada funcionário
+
 let rastreamentoAtivo = false;
 let rastreamentoWatcherId;
 
@@ -49,7 +51,7 @@ function iniciarRastreamento(funcionarioId) {
             },
             {
                 enableHighAccuracy: true,
-                maximumAge: 5000,  // mantém até 5s para reduzir consumo
+                maximumAge: 5000,
                 timeout: 10000
             }
         );
@@ -68,3 +70,37 @@ function pararRastreamento() {
         console.log("ℹ️ Rastreamento já estava parado ou não iniciado.");
     }
 }
+
+// ✅ Socket.IO: escutando atualizações em tempo real e atualizando marcadores
+
+const socket = io();  // ✅ Conecta ao servidor Socket.IO
+
+socket.on('location_update', function(data) {
+    const { id_funcionario, nome, lat, lng, status } = data;
+
+    // Define a cor do marcador: verde online, vermelho offline
+    const cor = status === 'online' ? 'green' : 'red';
+
+    // Se já existe um marcador para esse funcionário
+    if (marcadores[id_funcionario]) {
+        marcadores[id_funcionario].setLatLng([lat, lng]);  // atualiza posição
+        marcadores[id_funcionario].setIcon(L.icon({
+            iconUrl: `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=•|${cor}`,
+            iconSize: [21, 34],
+            iconAnchor: [10, 34]
+        }));
+    } else {
+        // Cria novo marcador
+        const marcador = L.marker([lat, lng], {
+            icon: L.icon({
+                iconUrl: `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=•|${cor}`,
+                iconSize: [21, 34],
+                iconAnchor: [10, 34]
+            })
+        }).addTo(map).bindPopup(`${nome} (${status})`);
+
+        marcadores[id_funcionario] = marcador;
+    }
+
+    console.log(`📡 Atualização recebida: ${nome} está ${status} em (${lat}, ${lng})`);
+});
