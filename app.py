@@ -649,6 +649,9 @@ def receber_rastreamento():
 
     return jsonify({'status': 'ok'})
 
+from datetime import datetime, timezone
+import sqlite3
+
 @app.route('/rastreamento')
 def visualizar_rastreamento():
     if session.get("perfil") != "admin":
@@ -673,33 +676,29 @@ def visualizar_rastreamento():
     else:
         pontos = []
 
-    # ✅ Consulta funcionários com nome + sobrenome
-    cur.execute('SELECT id, nome, sobrenome FROM funcionarios ORDER BY nome ASC')
-    funcionarios = [{'id': row[0], 'nome_completo': f"{row[1]} {row[2]}"} for row in cur.fetchall()]
-
-    # ✅ Consulta último ponto registrado para o funcionário
+    # ✅ Consulta último ponto para tempo real
     ultimo_ponto = None
     if id_func:
         cur.execute('''
             SELECT latitude, longitude, timestamp
             FROM rastreamento
             WHERE id_funcionario = ?
-            ORDER BY timestamp DESC
-            LIMIT 1
+            ORDER BY timestamp DESC LIMIT 1
         ''', (id_func,))
         row = cur.fetchone()
 
         if row:
-            from datetime import datetime, timezone
-
             latitude, longitude, timestamp_str = row
-            timestamp_dt = datetime.fromisoformat(timestamp_str).replace(tzinfo=timezone.utc)
-            agora = datetime.utcnow().replace(tzinfo=timezone.utc)
+            try:
+                timestamp_dt = datetime.fromisoformat(timestamp_str)
+            except ValueError:
+                # ✅ Suporte a formatos sem 'T'
+                timestamp_dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+            timestamp_dt = timestamp_dt.replace(tzinfo=timezone.utc)
 
-            # ✅ Calcula diferença de tempo
+            agora = datetime.utcnow().replace(tzinfo=timezone.utc)
             diferenca_segundos = (agora - timestamp_dt).total_seconds()
 
-            # ✅ Define status
             status = 'online' if diferenca_segundos <= 15 else 'offline'
 
             ultimo_ponto = {
@@ -708,15 +707,16 @@ def visualizar_rastreamento():
                 'status': status,
                 'timestamp': timestamp_str
             }
+        else:
+            ultimo_ponto = None
+
+    # ✅ Consulta funcionários
+    cur.execute('SELECT id, nome, sobrenome FROM funcionarios ORDER BY nome ASC')
+    funcionarios = [{'id': row[0], 'nome_completo': f"{row[1]} {row[2]}"} for row in cur.fetchall()]
 
     con.close()
 
-    return render_template(
-        'rastreamento.html',
-        pontos=pontos,
-        funcionarios=funcionarios,
-        ultimo_ponto=ultimo_ponto
-    )
+    return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios, ultimo_ponto=ultimo_ponto)
 
 @app.route("/logs")
 def pagina_logs():
