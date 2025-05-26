@@ -664,7 +664,7 @@ def visualizar_rastreamento():
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
 
-    # ✅ Consulta pontos de rastreamento (histórico)
+    # Consulta pontos de rastreamento
     if id_func and data:
         cur.execute('''
             SELECT latitude, longitude
@@ -676,47 +676,13 @@ def visualizar_rastreamento():
     else:
         pontos = []
 
-    # ✅ Consulta último ponto para tempo real
-    ultimo_ponto = None
-    if id_func:
-        cur.execute('''
-            SELECT latitude, longitude, timestamp
-            FROM rastreamento
-            WHERE id_funcionario = ?
-            ORDER BY timestamp DESC LIMIT 1
-        ''', (id_func,))
-        row = cur.fetchone()
-
-        if row:
-            latitude, longitude, timestamp_str = row
-            try:
-                timestamp_dt = datetime.fromisoformat(timestamp_str)
-            except ValueError:
-                # ✅ Suporte a formatos sem 'T'
-                timestamp_dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
-            timestamp_dt = timestamp_dt.replace(tzinfo=timezone.utc)
-
-            agora = datetime.utcnow().replace(tzinfo=timezone.utc)
-            diferenca_segundos = (agora - timestamp_dt).total_seconds()
-
-            status = 'online' if diferenca_segundos <= 15 else 'offline'
-
-            ultimo_ponto = {
-                'lat': latitude,
-                'lng': longitude,
-                'status': status,
-                'timestamp': timestamp_str
-            }
-        else:
-            ultimo_ponto = None
-
-    # ✅ Consulta funcionários
+    # Consulta funcionários com nome + sobrenome
     cur.execute('SELECT id, nome, sobrenome FROM funcionarios ORDER BY nome ASC')
     funcionarios = [{'id': row[0], 'nome_completo': f"{row[1]} {row[2]}"} for row in cur.fetchall()]
 
     con.close()
 
-    return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios, ultimo_ponto=ultimo_ponto)
+    return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios)
 
 @app.route("/logs")
 def pagina_logs():
