@@ -2,61 +2,25 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Registros de Ponto</title>
+    <title>GPS Tempo Real</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- ✅ [PWA] Manifesto e ícones -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="icon" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}">
-    <link rel="apple-touch-icon" sizes="512x512" href="{{ url_for('static', filename='icons/icon-512.png') }}">
-
-    <!-- ✅ [PWA] Metadados -->
-    <meta name="theme-color" content="#0d6efd">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-
-    <!-- Bootstrap 5 CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- ✅ Script customizado -->
-    <script src="{{ url_for('static', filename='script.js') }}?v=999"></script>
-
+    <link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"/>
     <style>
         body {
-            background-color: #f8f9fa;
             padding-top: 80px;
         }
-        .table-container {
-            max-width: 1200px;
-            margin: auto;
-            background: white;
-            padding: 30px;
+        #mapaTempoReal {
+            height: 500px;
             border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.08);
-        }
-        .btn-exportar {
-            float: right;
-            margin-bottom: 20px;
-        }
-        /* ✅ Mapa lateral */
-        #mapa-lateral {
-            display: none;
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            width: 400px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            padding: 10px;
-            z-index: 999;
+            margin-top: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
 
-<!-- Navbar -->
+<!-- ✅ Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="{{ url_for('index') }}">📍 Controle de Ponto</a>
@@ -87,51 +51,57 @@
     </div>
 </nav>
 
-<!-- Conteúdo -->
-<div class="table-container">
-    <h4 class="mb-4 text-center"><i class="bi bi-card-checklist"></i> Registros de Ponto</h4>
-
-    <div class="text-end">
-        <a href="{{ url_for('exportar_registros_csv') }}" class="btn btn-success btn-exportar">
-            <i class="bi bi-download"></i> Exportar CSV
-        </a>
-    </div>
-
-    <div class="table-responsive mt-3">
-        <table class="table table-bordered table-striped align-middle text-center">
-            <thead class="table-primary">
-                <tr>
-                    <th>👤 Nome</th>
-                    <th>📝 Tipo</th>
-                    <th>🕒 Data/Hora</th>
-                    <th>🌍 Latitude</th>
-                    <th>🌎 Longitude</th>
-                    <th>📍 Endereço</th>
-                    <th>Mapa</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for nome, tipo, data_hora, lat, long, endereco in dados %}
-                    <tr>
-                        <td>{{ nome }}</td>
-                        <td>{{ tipo }}</td>
-                        <td>{{ data_hora }}</td>
-                        <td>{{ lat }}</td>
-                        <td>{{ long }}</td>
-                        <td><a href="#" onclick="exibirMapaLateral({{ lat }}, {{ long }})">{{ endereco }}</a></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="exibirMapaLateral({{ lat }}, {{ long }})">📍 Ver no Mapa</button>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="container mt-4">
+    <h3 class="text-center mb-4"><i class="bi bi-geo-alt-fill"></i> GPS Tempo Real</h3>
+    <div id="mapaTempoReal"></div>
 </div>
 
-<!-- ✅ Mapa lateral -->
-<div id="mapa-lateral"></div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    const mapaTempoReal = L.map('mapaTempoReal').setView([-22.9, -43.2], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapaTempoReal);
+
+    let marcadores = {};
+
+    async function atualizarMapaTempoReal() {
+        try {
+            const response = await fetch('/api/ultima_posicao');
+            const dados = await response.json();
+
+            dados.forEach(f => {
+                if (marcadores[f.id_funcionario]) {
+                    marcadores[f.id_funcionario].setLatLng([f.lat, f.lng]);
+                    marcadores[f.id_funcionario].setIcon(getIcon('online'));
+                } else {
+                    const marcador = L.marker([f.lat, f.lng], { icon: getIcon('online') })
+                        .addTo(mapaTempoReal)
+                        .bindPopup(`${f.nome} - Online`);
+                    marcadores[f.id_funcionario] = marcador;
+                }
+            });
+
+        } catch (error) {
+            console.error("❌ Erro ao atualizar mapa tempo real:", error);
+        }
+    }
+
+    function getIcon(status) {
+        const color = status === "online" ? "green" : "red";
+        return L.icon({
+            iconUrl: `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+    }
+
+    setInterval(atualizarMapaTempoReal, 6000); // Atualiza a cada 6 segundos
+    atualizarMapaTempoReal();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

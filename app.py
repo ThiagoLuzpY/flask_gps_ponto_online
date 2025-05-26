@@ -684,6 +684,49 @@ def visualizar_rastreamento():
 
     return render_template('rastreamento.html', pontos=pontos, funcionarios=funcionarios)
 
+@app.route('/rastreamento_tempo_real')
+def visualizar_rastreamento_tempo_real():
+    if session.get("perfil") != "admin":
+        return redirect(url_for("index"))
+
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
+    cur = con.cursor()
+
+    # Consulta funcionários
+    cur.execute('SELECT id, nome, sobrenome FROM funcionarios ORDER BY nome ASC')
+    funcionarios = [{'id': row[0], 'nome_completo': f"{row[1]} {row[2]}"} for row in cur.fetchall()]
+
+    con.close()
+
+    return render_template('rastreamento_tempo_real.html', funcionarios=funcionarios)
+
+@app.route('/api/ultima_posicao', methods=['GET'])
+def api_ultima_posicao():
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
+    cur = con.cursor()
+
+    cur.execute('''
+        SELECT r.id_funcionario, f.nome, f.sobrenome, r.latitude, r.longitude, r.timestamp
+        FROM rastreamento r
+        JOIN funcionarios f ON r.id_funcionario = f.id
+        WHERE r.timestamp = (SELECT MAX(timestamp) FROM rastreamento WHERE id_funcionario = r.id_funcionario)
+        GROUP BY r.id_funcionario
+    ''')
+    dados = [{
+        'id_funcionario': row[0],
+        'nome': f"{row[1]} {row[2]}",
+        'lat': row[3],
+        'lng': row[4],
+        'timestamp': row[5]
+    } for row in cur.fetchall()]
+
+    con.close()
+
+    return jsonify(dados)
+
+
 @app.route("/logs")
 def pagina_logs():
     if session.get("perfil") != "admin":

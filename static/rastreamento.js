@@ -4,12 +4,7 @@ let marcadores = {};  // ✅ Objeto global para armazenar marcadores de cada fun
 let rastreamentoAtivo = false;
 let rastreamentoWatcherId;
 
-// ✅ Socket.IO: conexão forçada com long-polling (PythonAnywhere compatibilidade)
-const socket = io({
-    transports: ['polling']
-});
-
-// ✅ Função para iniciar rastreamento
+// ✅ Função para iniciar rastreamento (continua igual)
 function iniciarRastreamento(funcionarioId) {
     if (!funcionarioId) {
         console.error("❌ ERRO: ID do funcionário não informado para rastreamento!");
@@ -79,31 +74,60 @@ function pararRastreamento() {
     }
 }
 
-// ✅ Configura Socket.IO para atualizações em tempo real no mapa
-function configurarSocket(mapaTempoReal) {
-    socket.on('status_atualizado', function(dados) {
-        const { id_funcionario, nome, lat, lng, status } = dados;
-        const cor = status === 'online' ? 'green' : 'red';
+// ✅ Inicializa o mapa em tempo real
+function inicializarMapaTempoReal() {
+    const mapaTempoReal = L.map('mapaTempoReal').setView([-22.9, -43.2], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(mapaTempoReal);
+    return mapaTempoReal;
+}
 
-        if (marcadores[id_funcionario]) {
-            marcadores[id_funcionario].setLatLng([lat, lng]);
-            marcadores[id_funcionario].setIcon(L.icon({
-                iconUrl: `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=•|${cor}`,
-                iconSize: [21, 34],
-                iconAnchor: [10, 34]
-            }));
-        } else {
-            const marcador = L.marker([lat, lng], {
-                icon: L.icon({
-                    iconUrl: `https://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=•|${cor}`,
-                    iconSize: [21, 34],
-                    iconAnchor: [10, 34]
-                })
-            }).addTo(mapaTempoReal).bindPopup(`${nome} (${status})`);
+// ✅ Atualiza marcador de funcionário
+function atualizarMarcador(funcionario, mapaTempoReal) {
+    const { id, nome_completo, lat, lng, status } = funcionario;
 
-            marcadores[id_funcionario] = marcador;
-        }
+    if (marcadores[id]) {
+        marcadores[id].setLatLng([lat, lng]);
+        marcadores[id].setIcon(getIcon(status));
+    } else {
+        marcadores[id] = L.marker([lat, lng], {
+            icon: getIcon(status)
+        }).addTo(mapaTempoReal).bindPopup(`${nome_completo} - ${status}`);
+    }
+}
 
-        console.log(`📡 Atualização recebida: ${nome} está ${status} em (${lat}, ${lng})`);
+// ✅ Define ícone de status
+function getIcon(status) {
+    const color = status === "online" ? "green" : "red";
+    return L.icon({
+        iconUrl: `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
     });
 }
+
+// ✅ Polling RESTful a cada 10 segundos
+function iniciarPolling(mapaTempoReal) {
+    setInterval(() => {
+        fetch('/api/ultima_posicao')
+            .then(response => response.json())
+            .then(data => {
+                console.log("📡 Dados recebidos do polling:", data);
+                data.forEach(funcionario => {
+                    atualizarMarcador(funcionario, mapaTempoReal);
+                });
+            })
+            .catch(error => {
+                console.error("❌ Erro ao buscar última posição:", error);
+            });
+    }, 10000); // 10 segundos
+}
+
+// ✅ Inicialização geral
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("🚀 Inicializando mapa tempo real com polling...");
+    const mapaTempoReal = inicializarMapaTempoReal();
+    iniciarPolling(mapaTempoReal);
+});
