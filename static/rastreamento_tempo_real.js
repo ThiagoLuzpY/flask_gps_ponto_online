@@ -1,5 +1,6 @@
 let marcador = null;
 let mapaTempoReal = null;
+let intervalo = null;
 
 function inicializarMapaTempoReal() {
     mapaTempoReal = L.map('mapaTempoReal').setView([-22.9, -43.2], 12);
@@ -33,22 +34,38 @@ function buscarUltimaPosicao(funcionarioId) {
         .catch(error => console.error("❌ Erro ao buscar última posição:", error));
 }
 
+function iniciarAtualizacaoAutomatica(funcionarioId) {
+    if (intervalo) {
+        clearInterval(intervalo);
+    }
+    buscarUltimaPosicao(funcionarioId);
+    intervalo = setInterval(() => {
+        buscarUltimaPosicao(funcionarioId);
+    }, 10000);  // ✅ Atualiza a cada 10 segundos
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     inicializarMapaTempoReal();
 
     const selectFuncionario = document.querySelector("#select-funcionario-tempo-real");
     let funcionarioIdSelecionado = selectFuncionario ? selectFuncionario.value : null;
 
+    if (funcionarioIdSelecionado) {
+        iniciarAtualizacaoAutomatica(funcionarioIdSelecionado);
+    }
+
     selectFuncionario.addEventListener('change', function () {
         funcionarioIdSelecionado = this.value;
         if (funcionarioIdSelecionado) {
-            buscarUltimaPosicao(funcionarioIdSelecionado);
+            iniciarAtualizacaoAutomatica(funcionarioIdSelecionado);
+        } else {
+            if (intervalo) {
+                clearInterval(intervalo);
+            }
+            if (marcador) {
+                mapaTempoReal.removeLayer(marcador);
+                marcador = null;
+            }
         }
     });
-
-    setInterval(() => {
-        if (funcionarioIdSelecionado) {
-            buscarUltimaPosicao(funcionarioIdSelecionado);
-        }
-    }, 10000);  // ✅ A cada 10 segundos
 });
