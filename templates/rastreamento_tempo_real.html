@@ -7,9 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"/>
     <style>
-        body {
-            padding-top: 80px;
-        }
+        body { padding-top: 80px; }
         #mapaTempoReal {
             height: 500px;
             border-radius: 12px;
@@ -53,6 +51,22 @@
 
 <div class="container mt-4">
     <h3 class="text-center mb-4"><i class="bi bi-geo-alt-fill"></i> GPS Tempo Real</h3>
+
+    <form method="get" action="/rastreamento_tempo_real" class="row g-3">
+        <div class="col-md-5 offset-md-3">
+            <label class="form-label">Funcionário:</label>
+            <select name="funcionario_id" class="form-select" required>
+                <option value="">Selecione</option>
+                {% for f in funcionarios %}
+                <option value="{{ f.id }}" {% if request.args.get('funcionario_id') == f.id|string %}selected{% endif %}>{{ f.nome_completo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        </div>
+    </form>
+
     <div id="mapaTempoReal"></div>
 </div>
 
@@ -64,6 +78,7 @@
     }).addTo(mapaTempoReal);
 
     let marcadores = {};
+    const funcionarioSelecionado = "{{ request.args.get('funcionario_id') }}";
 
     async function atualizarMapaTempoReal() {
         try {
@@ -71,6 +86,10 @@
             const dados = await response.json();
 
             dados.forEach(f => {
+                if (funcionarioSelecionado && funcionarioSelecionado != f.id_funcionario) {
+                    return;  // Se houver filtro, só mostra quem foi selecionado
+                }
+
                 if (marcadores[f.id_funcionario]) {
                     marcadores[f.id_funcionario].setLatLng([f.lat, f.lng]);
                     marcadores[f.id_funcionario].setIcon(getIcon('online'));
@@ -81,7 +100,6 @@
                     marcadores[f.id_funcionario] = marcador;
                 }
             });
-
         } catch (error) {
             console.error("❌ Erro ao atualizar mapa tempo real:", error);
         }
@@ -97,7 +115,7 @@
         });
     }
 
-    setInterval(atualizarMapaTempoReal, 6000); // Atualiza a cada 6 segundos
+    setInterval(atualizarMapaTempoReal, 6000);
     atualizarMapaTempoReal();
 </script>
 
