@@ -1,8 +1,15 @@
-let marcadores = {};  // ✅ Objeto global para armazenar marcadores de cada funcionário
+// flask_gps_ponto/static/rastreamento.js
 
+let marcadores = {};  // ✅ Objeto global para armazenar marcadores de cada funcionário
 let rastreamentoAtivo = false;
 let rastreamentoWatcherId;
 
+// ✅ Socket.IO: conexão forçada com long-polling (PythonAnywhere compatibilidade)
+const socket = io({
+    transports: ['polling']
+});
+
+// ✅ Função para iniciar rastreamento
 function iniciarRastreamento(funcionarioId) {
     if (!funcionarioId) {
         console.error("❌ ERRO: ID do funcionário não informado para rastreamento!");
@@ -60,6 +67,7 @@ function iniciarRastreamento(funcionarioId) {
     }
 }
 
+// ✅ Função para parar rastreamento
 function pararRastreamento() {
     if (rastreamentoAtivo && rastreamentoWatcherId !== undefined) {
         navigator.geolocation.clearWatch(rastreamentoWatcherId);
@@ -71,14 +79,10 @@ function pararRastreamento() {
     }
 }
 
-// ✅ Socket.IO: escutando atualizações em tempo real e atualizando marcadores
-
+// ✅ Configura Socket.IO para atualizações em tempo real no mapa
 function configurarSocket(mapaTempoReal) {
-    const socket = io();  // ✅ Conecta ao servidor Socket.IO
-
     socket.on('status_atualizado', function(dados) {
         const { id_funcionario, nome, lat, lng, status } = dados;
-
         const cor = status === 'online' ? 'green' : 'red';
 
         if (marcadores[id_funcionario]) {

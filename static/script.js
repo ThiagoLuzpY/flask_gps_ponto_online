@@ -6,7 +6,7 @@ function abrirMapa(lat, lon) {
     window.open(url, "_blank");
 }
 
-// ✅ Nova função: exibir mapa na lateral
+// ✅ Função: exibir mapa na lateral
 function exibirMapaLateral(lat, lon) {
     const mapaLateral = document.getElementById('mapa-lateral');
     if (mapaLateral) {
@@ -40,7 +40,7 @@ function fecharMapaLateral() {
     }
 }
 
-// ✅ Execução automática só para página de registro
+// ✅ Execução automática apenas para página de registro
 window.onload = function () {
     const latitudeInput = document.getElementById("latitude");
     const longitudeInput = document.getElementById("longitude");
@@ -48,6 +48,7 @@ window.onload = function () {
     const mapaDiv = document.getElementById("mapa-localizacao");
 
     if (latitudeInput && longitudeInput && coordenadasDiv) {
+
         function atualizarMapa(lat, lon) {
             if (mapaDiv) {
                 mapaDiv.innerHTML = `
@@ -87,16 +88,18 @@ window.onload = function () {
                     `;
 
                     atualizarMapa(lat, lon);
+                    console.log("✅ Localização detectada e atualizada.");
                 },
                 function (error) {
                     coordenadasDiv.innerHTML = "❌ Não foi possível obter sua localização.";
                     if (mapaDiv) mapaDiv.innerHTML = "";
-                    console.error("Erro ao obter localização:", error);
+                    console.error("❌ Erro ao obter localização:", error);
                 }
             );
         } else {
             coordenadasDiv.innerHTML = "⚠️ Geolocalização não suportada neste navegador.";
             if (mapaDiv) mapaDiv.innerHTML = "";
+            console.warn("⚠️ Geolocalização não suportada.");
         }
     }
 
