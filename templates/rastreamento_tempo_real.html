@@ -46,7 +46,7 @@
     <h3 class="text-center mb-4"><i class="bi bi-geo-alt-fill"></i> GPS Tempo Real</h3>
 
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-5">
             <label class="form-label">Funcionário:</label>
             <select id="select-funcionario-tempo-real" class="form-select">
                 <option value="">Selecione</option>
@@ -54,6 +54,9 @@
                 <option value="{{ f.id }}" {% if request.args.get('funcionario_id') == f.id|string %}selected{% endif %}>{{ f.nome_completo }}</option>
                 {% endfor %}
             </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="button" id="botao-buscar" class="btn btn-primary w-100">Buscar</button>
         </div>
     </div>
 

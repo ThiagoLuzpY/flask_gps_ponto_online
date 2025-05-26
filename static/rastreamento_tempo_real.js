@@ -50,25 +50,17 @@ function iniciarAtualizacaoAutomatica(funcionarioId) {
 document.addEventListener("DOMContentLoaded", () => {
     inicializarMapaTempoReal();
 
-    const selectFuncionario = document.querySelector("#select-funcionario-tempo_real");
-    let funcionarioIdSelecionado = selectFuncionario ? selectFuncionario.value : null;
+    const selectFuncionario = document.querySelector("#select-funcionario-tempo-real");
+    const botaoBuscar = document.querySelector("#botao-buscar");
 
-    if (funcionarioIdSelecionado) {
-        iniciarAtualizacaoAutomatica(funcionarioIdSelecionado);
-    }
+    botaoBuscar.addEventListener('click', () => {
+        const funcionarioIdSelecionado = selectFuncionario.value;
 
-    selectFuncionario.addEventListener('change', function () {
-        funcionarioIdSelecionado = this.value;
-        if (funcionarioIdSelecionado) {
-            iniciarAtualizacaoAutomatica(funcionarioIdSelecionado);
-        } else {
-            if (intervalo) {
-                clearInterval(intervalo);
-            }
-            if (marcador) {
-                mapaTempoReal.removeLayer(marcador);
-                marcador = null;
-            }
+        if (!funcionarioIdSelecionado) {
+            alert("Por favor, selecione um funcionário antes de buscar.");
+            return;
         }
+
+        iniciarAtualizacaoAutomatica(funcionarioIdSelecionado);
     });
 });
