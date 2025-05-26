@@ -4,15 +4,10 @@
     <meta charset="UTF-8">
     <title>Rastreamento de Funcionários</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"/>
-
     <style>
-        body {
-            padding-top: 80px; /* Espaço para o navbar */
-        }
+        body { padding-top: 80px; }
         #map, #mapaTempoReal {
             height: 500px;
             border-radius: 12px;
@@ -23,7 +18,6 @@
 </head>
 <body>
 
-<!-- ✅ Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="{{ url_for('index') }}">📍 Controle de Ponto</a>
@@ -55,7 +49,6 @@
 
 <div class="container mt-4">
     <h3 class="text-center mb-4"><i class="bi bi-map"></i> Rastreamento de Funcionários</h3>
-
     <form method="get" action="/rastreamento" class="row g-3">
         <div class="col-md-5">
             <label class="form-label">Funcionário:</label>
@@ -66,12 +59,10 @@
                 {% endfor %}
             </select>
         </div>
-
         <div class="col-md-5">
             <label class="form-label">Data:</label>
             <input type="date" name="data" class="form-control" value="{{ request.args.get('data', '') }}" required>
         </div>
-
         <div class="col-md-2 d-flex align-items-end">
             <button type="submit" class="btn btn-primary w-100">Consultar</button>
         </div>
@@ -92,7 +83,6 @@
 
 <script>
     const pontos = {{ pontos|tojson }};
-    const ultimoPonto = {{ ultimo_ponto|tojson }};
     let map;
 
     if (pontos.length > 0) {
@@ -100,13 +90,10 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-
         const polyline = L.polyline(pontos.map(p => [p.lat, p.lng]), { color: 'blue' }).addTo(map);
         map.fitBounds(polyline.getBounds());
-
         const start = pontos[0];
         const end = pontos[pontos.length - 1];
-
         L.marker([start.lat, start.lng]).addTo(map).bindPopup('Início').openPopup();
         L.marker([end.lat, end.lng]).addTo(map).bindPopup('Fim');
     } else {
@@ -124,39 +111,22 @@
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(mapaTempoReal);
 
+        const socket = io({ transports: ['polling'] });
+        let statusFuncionarios = {};
         let marcadores = {};
 
-        // ✅ Se tiver ultimo_ponto, adiciona marcador inicial
-        if (ultimoPonto) {
-            const cor = ultimoPonto.status === 'online' ? 'green' : 'red';
-            const icon = L.icon({
-                iconUrl: `https://maps.google.com/mapfiles/ms/icons/${cor}-dot.png`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32]
-            });
-
-            L.marker([ultimoPonto.lat, ultimoPonto.lng], { icon: icon })
-                .addTo(mapaTempoReal)
-                .bindPopup(`Última posição - ${ultimoPonto.status.toUpperCase()}<br>${ultimoPonto.timestamp}`);
-        }
-
-        // ✅ Forçar long-polling para compatibilidade
-        const socket = io({ transports: ['polling'] });
-
         socket.on('status_atualizado', (dados) => {
-            const { id_funcionario, nome, lat, lng, status } = dados;
+            console.log("🔔 Status atualizado recebido:", dados);
+            statusFuncionarios[dados.id_funcionario] = dados;
 
-            if (marcadores[id_funcionario]) {
-                marcadores[id_funcionario].setLatLng([lat, lng]);
-                marcadores[id_funcionario].setIcon(getIcon(status));
+            if (marcadores[dados.id_funcionario]) {
+                marcadores[dados.id_funcionario].setLatLng([dados.lat, dados.lng]);
+                marcadores[dados.id_funcionario].setIcon(getIcon(dados.status));
             } else {
-                marcadores[id_funcionario] = L.marker([lat, lng], {
-                    icon: getIcon(status)
-                }).addTo(mapaTempoReal).bindPopup(`${nome} - ${status}`);
+                marcadores[dados.id_funcionario] = L.marker([dados.lat, dados.lng], {
+                    icon: getIcon(dados.status)
+                }).addTo(mapaTempoReal).bindPopup(`${dados.nome} - ${dados.status}`);
             }
-
-            console.log("🔔 Status atualizado:", dados);
         });
 
         function getIcon(status) {
@@ -170,7 +140,6 @@
         }
     }
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
