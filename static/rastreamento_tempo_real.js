@@ -25,10 +25,11 @@ function atualizarMarcador(funcionario, mapaTempoReal) {
     if (marcadores[id_funcionario]) {
         marcadores[id_funcionario].setLatLng([lat, lng]);
         marcadores[id_funcionario].setIcon(getIcon(status));
+        marcadores[id_funcionario].bindPopup(`${nome} - ${status}<br>${ultimaData.toLocaleTimeString()}`);
     } else {
         marcadores[id_funcionario] = L.marker([lat, lng], {
             icon: getIcon(status)
-        }).addTo(mapaTempoReal).bindPopup(`${nome} - ${status}`);
+        }).addTo(mapaTempoReal).bindPopup(`${nome} - ${status}<br>${ultimaData.toLocaleTimeString()}`);
     }
 }
 
@@ -43,7 +44,7 @@ function getIcon(status) {
     });
 }
 
-// ✅ Polling RESTful: atualiza a cada 6 segundos
+// ✅ Polling RESTful: atualiza a cada 15 segundos
 function iniciarPolling(mapaTempoReal, funcionarioIdSelecionado = null) {
     setInterval(() => {
         fetch('/api/ultima_posicao')
@@ -60,7 +61,7 @@ function iniciarPolling(mapaTempoReal, funcionarioIdSelecionado = null) {
             .catch(error => {
                 console.error("❌ Erro ao buscar última posição:", error);
             });
-    }, 6000);  // A cada 6 segundos
+    }, 15000);  // ✅ A cada 15 segundos
 }
 
 // ✅ Inicialização geral
@@ -75,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectFuncionario) {
         selectFuncionario.addEventListener('change', function() {
             funcionarioIdSelecionado = this.value;
-            console.log(`🔄 Funcionario selecionado para tempo real: ${funcionarioIdSelecionado}`);
+            console.log(`🔄 Funcionário selecionado para tempo real: ${funcionarioIdSelecionado}`);
         });
     }
 

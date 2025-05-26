@@ -55,7 +55,7 @@
     <form method="get" action="/rastreamento_tempo_real" class="row g-3">
         <div class="col-md-5 offset-md-3">
             <label class="form-label">Funcionário:</label>
-            <select name="funcionario_id" class="form-select" required>
+            <select id="select-funcionario-tempo-real" name="funcionario_id" class="form-select" required>
                 <option value="">Selecione</option>
                 {% for f in funcionarios %}
                 <option value="{{ f.id }}" {% if request.args.get('funcionario_id') == f.id|string %}selected{% endif %}>{{ f.nome_completo }}</option>
