@@ -71,54 +71,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
-    const mapaTempoReal = L.map('mapaTempoReal').setView([-22.9, -43.2], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(mapaTempoReal);
-
-    let marcadores = {};
-    const funcionarioSelecionado = "{{ request.args.get('funcionario_id') }}";
-
-    async function atualizarMapaTempoReal() {
-        try {
-            const response = await fetch('/api/ultima_posicao');
-            const dados = await response.json();
-
-            dados.forEach(f => {
-                if (funcionarioSelecionado && funcionarioSelecionado != f.id_funcionario) {
-                    return;  // Se houver filtro, só mostra quem foi selecionado
-                }
-
-                if (marcadores[f.id_funcionario]) {
-                    marcadores[f.id_funcionario].setLatLng([f.lat, f.lng]);
-                    marcadores[f.id_funcionario].setIcon(getIcon('online'));
-                } else {
-                    const marcador = L.marker([f.lat, f.lng], { icon: getIcon('online') })
-                        .addTo(mapaTempoReal)
-                        .bindPopup(`${f.nome} - Online`);
-                    marcadores[f.id_funcionario] = marcador;
-                }
-            });
-        } catch (error) {
-            console.error("❌ Erro ao atualizar mapa tempo real:", error);
-        }
-    }
-
-    function getIcon(status) {
-        const color = status === "online" ? "green" : "red";
-        return L.icon({
-            iconUrl: `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
-    }
-
-    setInterval(atualizarMapaTempoReal, 6000);
-    atualizarMapaTempoReal();
-</script>
-
+<script src="{{ url_for('static', filename='rastreamento_tempo_real.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
