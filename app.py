@@ -703,6 +703,12 @@ def visualizar_rastreamento_tempo_real():
 
 @app.route('/api/ultima_posicao', methods=['GET'])
 def api_ultima_posicao():
+    id_func = request.args.get('funcionario_id')
+    data = request.args.get('data')
+
+    if not id_func or not data:
+        return jsonify({'error': 'Parâmetros obrigatórios: funcionario_id e data'}), 400
+
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
@@ -711,20 +717,26 @@ def api_ultima_posicao():
         SELECT r.id_funcionario, f.nome, f.sobrenome, r.latitude, r.longitude, r.timestamp
         FROM rastreamento r
         JOIN funcionarios f ON r.id_funcionario = f.id
-        WHERE r.timestamp = (SELECT MAX(timestamp) FROM rastreamento WHERE id_funcionario = r.id_funcionario)
-        GROUP BY r.id_funcionario
-    ''')
-    dados = [{
-        'id_funcionario': row[0],
-        'nome': f"{row[1]} {row[2]}",
-        'lat': row[3],
-        'lng': row[4],
-        'timestamp': row[5]
-    } for row in cur.fetchall()]
+        WHERE r.id_funcionario = ? AND DATE(r.timestamp) = ?
+        ORDER BY r.timestamp DESC
+        LIMIT 1
+    ''', (id_func, data))
+
+    row = cur.fetchone()
 
     con.close()
 
-    return jsonify(dados)
+    if row:
+        return jsonify({
+            'id_funcionario': row[0],
+            'nome': f"{row[1]} {row[2]}",
+            'lat': row[3],
+            'lng': row[4],
+            'timestamp': row[5]
+        })
+    else:
+        return jsonify({'message': 'Nenhum registro encontrado'}), 404
+
 
 
 @app.route("/logs")
