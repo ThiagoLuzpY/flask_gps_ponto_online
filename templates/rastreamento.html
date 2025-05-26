@@ -13,13 +13,7 @@
         body {
             padding-top: 80px; /* Espaço para o navbar */
         }
-        #map {
-            height: 500px;
-            border-radius: 12px;
-            margin-top: 20px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
-        #mapaTempoReal {
+        #map, #mapaTempoReal {
             height: 500px;
             border-radius: 12px;
             margin-top: 20px;
@@ -98,6 +92,7 @@
 
 <script>
     const pontos = {{ pontos|tojson }};
+    const ultimoPonto = {{ ultimo_ponto|tojson }};
     let map;
 
     if (pontos.length > 0) {
@@ -129,21 +124,25 @@
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(mapaTempoReal);
 
-        // ✅ Forçar long-polling para compatibilidade com PythonAnywhere
-        const socket = io({
-            transports: ['polling']
-        });
-
-        // ✅ Configura Socket com o mapa
-        configurarSocket(mapaTempoReal);
-    }
-
-    function configurarSocket(mapaTempoReal) {
-        const socket = io({
-            transports: ['polling']
-        });
-
         let marcadores = {};
+
+        // ✅ Se tiver ultimo_ponto, adiciona marcador inicial
+        if (ultimoPonto) {
+            const cor = ultimoPonto.status === 'online' ? 'green' : 'red';
+            const icon = L.icon({
+                iconUrl: `https://maps.google.com/mapfiles/ms/icons/${cor}-dot.png`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+
+            L.marker([ultimoPonto.lat, ultimoPonto.lng], { icon: icon })
+                .addTo(mapaTempoReal)
+                .bindPopup(`Última posição - ${ultimoPonto.status.toUpperCase()}<br>${ultimoPonto.timestamp}`);
+        }
+
+        // ✅ Forçar long-polling para compatibilidade
+        const socket = io({ transports: ['polling'] });
 
         socket.on('status_atualizado', (dados) => {
             const { id_funcionario, nome, lat, lng, status } = dados;

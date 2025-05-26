@@ -149,6 +149,7 @@
 </div>
 
 <script>
+    // ✅ Função para obter coordenadas e submeter o form
     function obterCoordenadas() {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -167,27 +168,41 @@
         return false;
     }
 
-    // ✅ Rastreamento automático contínuo
+    // ✅ Rastreamento automático contínuo com envio forçado a cada 10s
     document.addEventListener("DOMContentLoaded", () => {
         if ("geolocation" in navigator) {
             const funcionarioId = {{ session['id'] }};
-            navigator.geolocation.watchPosition(
-                position => {
+            let ultimaPosicao = null;
+
+            function enviarRastreamento() {
+                if (ultimaPosicao) {
                     const dados = {
                         id_funcionario: funcionarioId,
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
+                        latitude: ultimaPosicao.coords.latitude,
+                        longitude: ultimaPosicao.coords.longitude,
                         timestamp: new Date().toISOString()
                     };
                     fetch('/api/rastreamento', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(dados)
-                    });
+                    }).then(() => {
+                        console.log("✅ Posição enviada:", dados);
+                    }).catch(err => console.error("❌ Erro ao enviar posição:", err));
+                }
+            }
+
+            navigator.geolocation.watchPosition(
+                position => {
+                    ultimaPosicao = position;
+                    enviarRastreamento();  // ✅ Envia imediatamente ao obter nova posição
                 },
-                error => console.error('Erro no rastreamento:', error),
+                error => console.error('❌ Erro no rastreamento:', error),
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
+
+            // ✅ Forçar envio a cada 6 segundos
+            setInterval(enviarRastreamento, 6000);
         }
     });
 </script>
