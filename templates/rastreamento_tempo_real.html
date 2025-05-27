@@ -27,16 +27,23 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pagina_funcionarios') }}">Funcionários</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pagina_cadastro') }}">Cadastrar Funcionário</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pagina_logs') }}">Logs</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pagina_graficos') }}">Ver Gráficos</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pagina_registros') }}">Registros</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('visualizar_rastreamento') }}">Rastreamento</a></li>
-                <li class="nav-item"><a class="nav-link active" href="{{ url_for('visualizar_rastreamento_tempo_real') }}">GPS Tempo Real</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pagina_reset_senha') }}">Resetar Senha</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pagina_config_admin') }}">Configurações</a></li>
-                <li class="nav-item"><a class="nav-link text-danger fw-bold" href="{{ url_for('logout') }}">🚪 Sair</a></li>
+                {% if session["perfil"] == "admin" %}
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_funcionarios') %}active{% endif %}" href="{{ url_for('pagina_funcionarios') }}">Funcionários</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_cadastro') %}active{% endif %}" href="{{ url_for('pagina_cadastro') }}">Cadastrar Funcionário</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_logs') %}active{% endif %}" href="{{ url_for('pagina_logs') }}">Logs</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_graficos') %}active{% endif %}" href="{{ url_for('pagina_graficos') }}">Ver Gráficos</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_registros') %}active{% endif %}" href="{{ url_for('pagina_registros') }}">Registros</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('visualizar_rastreamento') %}active{% endif %}" href="{{ url_for('visualizar_rastreamento') }}">Rastreamento</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('visualizar_rastreamento_tempo_real') %}active{% endif %}" href="{{ url_for('visualizar_rastreamento_tempo_real') }}">GPS Tempo Real</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_reset_senha') %}active{% endif %}" href="{{ url_for('pagina_reset_senha') }}">Resetar Senha</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_config_admin') %}active{% endif %}" href="{{ url_for('pagina_config_admin') }}">Configurações</a></li>
+                {% elif session["perfil"] == "funcionario" %}
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_registro_ponto') %}active{% endif %}" href="{{ url_for('pagina_registro_ponto') }}">Registrar Ponto</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path == url_for('pagina_reset_senha') %}active{% endif %}" href="{{ url_for('pagina_reset_senha') }}">Resetar Senha</a></li>
+                {% endif %}
+                {% if session["perfil"] %}
+                    <li class="nav-item"><a class="nav-link text-danger fw-bold" href="{{ url_for('logout') }}">🚪 Sair</a></li>
+                {% endif %}
             </ul>
         </div>
     </div>
@@ -65,6 +72,9 @@
     </form>
 
     {% if pontos %}
+        <div id="infoTempoReal" class="alert alert-secondary text-center mt-3">
+            Carregando informações...
+        </div>
         <div id="mapaTempoReal"></div>
     {% else %}
         <div class="alert alert-info mt-4">Nenhum ponto encontrado para os filtros selecionados.</div>

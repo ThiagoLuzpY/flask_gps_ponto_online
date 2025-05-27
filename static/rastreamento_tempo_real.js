@@ -1,23 +1,54 @@
 // flask_gps_ponto/static/rastreamento_tempo_real.js
 
-// ✅ Inicializa o mapa com o último ponto
+const OPENCAGE_API_KEY = "c9aac9c2ac4b468fbd700c9dc1489763";
+
 function inicializarMapaTempoReal(ultimoPonto) {
-    const mapaTempoReal = L.map('mapaTempoReal').setView([ultimoPonto.lat, ultimoPonto.lng], 16);  // ⬅️ Aumentei o zoom de 13 para 16
+    const mapaTempoReal = L.map('mapaTempoReal').setView([ultimoPonto.lat, ultimoPonto.lng], 16);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(mapaTempoReal);
 
-    L.marker([ultimoPonto.lat, ultimoPonto.lng])
-        .addTo(mapaTempoReal)
-        .bindPopup(`Última posição registrada<br>Latitude: ${ultimoPonto.lat}<br>Longitude: ${ultimoPonto.lng}`)
-        .openPopup();
+    obterEndereco(ultimoPonto.lat, ultimoPonto.lng)
+        .then(endereco => {
+            const hora = new Date(ultimoPonto.timestamp).toLocaleTimeString();
+            const info = `Última posição registrada<br>
+                Latitude: ${ultimoPonto.lat}<br>
+                Longitude: ${ultimoPonto.lng}<br>
+                Último horário online: ${hora}<br>
+                Endereço: ${endereco}`;
 
-    // ✅ Garante centralização
+            L.marker([ultimoPonto.lat, ultimoPonto.lng])
+                .addTo(mapaTempoReal)
+                .bindPopup(info)
+                .openPopup();
+
+            document.getElementById('infoTempoReal').innerHTML = `
+                <strong>Último horário online:</strong> ${hora}<br>
+                <strong>Endereço:</strong> ${endereco}
+            `;
+        })
+        .catch(err => {
+            console.error("❌ Erro ao obter endereço:", err);
+            document.getElementById('infoTempoReal').innerText = "Erro ao obter endereço.";
+        });
+
     mapaTempoReal.panTo([ultimoPonto.lat, ultimoPonto.lng]);
 }
 
-// ✅ Inicialização geral
+function obterEndereco(lat, lng) {
+    const url = `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${OPENCAGE_API_KEY}&language=pt&pretty=1`;
+    return fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data.results.length > 0) {
+                return data.results[0].formatted;
+            } else {
+                return "Endereço não encontrado";
+            }
+        });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     console.log("🚀 Inicializando mapa tempo real (último ponto)...");
 
@@ -28,5 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
         inicializarMapaTempoReal(ultimoPonto);
     } else {
         console.warn("⚠️ Nenhum ponto encontrado para exibição.");
+        document.getElementById('infoTempoReal').innerText = "Nenhum ponto encontrado para exibição.";
     }
 });
