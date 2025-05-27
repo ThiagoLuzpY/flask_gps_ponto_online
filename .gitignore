@@ -12,3 +12,19 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Arquivos de configuração sensíveis
+.env
+
+# Banco de dados local
+loja.db
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.bak
+
+# Node (caso adicione dependências via npm)
+node_modules/
