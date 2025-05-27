@@ -11,10 +11,7 @@ function inicializarMapaTempoReal(ultimoPonto) {
 
     obterEndereco(ultimoPonto.lat, ultimoPonto.lng)
         .then(endereco => {
-            let hora = "Sem horário registrado";
-            if (ultimoPonto.timestamp && ultimoPonto.timestamp.includes('T')) {
-                hora = ultimoPonto.timestamp.split('T')[1].substring(0, 8);
-            }
+            const hora = ultimoPonto.timestamp || "Sem horário registrado";
 
             const info = `Última posição registrada<br>
                 Latitude: ${ultimoPonto.lat}<br>
