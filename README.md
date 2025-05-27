@@ -185,12 +185,12 @@ http://localhost:5000
 Cenário	Configuração recomendada
 ✅ Hospedando no PythonAnywhere	Mantenha o caminho absoluto em DB_PATH
 ✅ Rodando localmente	Ajuste para caminho relativo
-✅ Rodando em outro servidor Linux	Configure o DB_PATH de acordo com a pasta onde colocará o loja.db
+✅ Rodando em outro servidor Linux	Configure o DB_PATH de acordo com a pasta onde colocará o banco_de_dados.db
 ✅ Migrando para outro banco (PostgreSQL, MySQL)	Ajuste a conexão e as queries no app.py
 
 ✅ Sobre o API Key do OpenCage:
 Este projeto utiliza a API do OpenCage para conversão de latitude e longitude em endereços:
-OPENCAGE_API_KEY = "c9aac9c2ac4b468fbd700c9dc1489763"
+OPENCAGE_API_KEY = "SUA_KEY"
 
 
 ✅ Lembre-se:
@@ -208,9 +208,9 @@ import os
 
 app = Flask(__name__, static_url_path='/static')
 socketio = SocketIO(app, cors_allowed_origins="*")
-app.secret_key = os.getenv("SECRET_KEY", "segredo_super_secreto_123")
-DB_PATH = os.getenv("DB_PATH", "/home/ThiagoLuz/flask_gps_ponto_online/loja.db")
-OPENCAGE_API_KEY = os.getenv("OPENCAGE_API_KEY", "c9aac9c2ac4b468fbd700c9dc1489763")
+app.secret_key = os.getenv("SECRET_KEY", "SUA CHAVE SECRETA")
+DB_PATH = os.getenv("DB_PATH", "/home/ThiagoLuz/flask_gps_ponto_online/BANCO_DE_DADOS.db")
+OPENCAGE_API_KEY = os.getenv("OPENCAGE_API_KEY", "SUA CHAVE OPEN GATE")
 
 ✅ Assim fica mais seguro e flexível para diferentes ambientes.
 
@@ -222,4 +222,6 @@ Rodar localmente	✅ Altere DB_PATH para relativo
 Melhorar segurança	✅ Use variáveis de ambiente para SECRET_KEY e OPENCAGE_API_KEY
 
 
+✅ Repositório: [ThiagoLuzpY/flask_gps_ponto_online](https://github.com/ThiagoLuzpY/flask_gps_ponto_online)
+✅ Deploy: [thiagoluz.pythonanywhere.com](https://thiagoluz.pythonanywhere.com)
 

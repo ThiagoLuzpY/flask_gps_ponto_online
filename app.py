@@ -8,12 +8,16 @@ import csv
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Carrega automaticamente variáveis do .env
 
 app = Flask(__name__, static_url_path='/static')  # ✅ Garante caminho correto para PWA
 socketio = SocketIO(app, cors_allowed_origins="*")
-app.secret_key = "segredo_super_secreto_123"
-DB_PATH = "/home/ThiagoLuz/flask_gps_ponto_online/loja.db"
-OPENCAGE_API_KEY = "c9aac9c2ac4b468fbd700c9dc1489763"
+app.secret_key = os.getenv("SECRET_KEY")
+DB_PATH = os.getenv("DB_PATH")
+OPENCAGE_API_KEY = os.getenv("OPENCAGE_API_KEY")
 online_status = {}
 
 # ---------- Funções de Inicialização ----------
