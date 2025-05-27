@@ -699,12 +699,12 @@ def visualizar_rastreamento_tempo_real():
     # Consulta pontos de rastreamento
     if id_func and data:
         cur.execute('''
-            SELECT latitude, longitude
+            SELECT latitude, longitude, timestamp
             FROM rastreamento
             WHERE id_funcionario = ? AND DATE(timestamp) = ?
             ORDER BY timestamp ASC
         ''', (id_func, data))
-        pontos = [{'lat': row[0], 'lng': row[1]} for row in cur.fetchall()]
+        pontos = [{'lat': row[0], 'lng': row[1], 'timestamp': row[2]} for row in cur.fetchall()]
     else:
         pontos = []
 
