@@ -11,7 +11,19 @@ function inicializarMapaTempoReal(ultimoPonto) {
 
     obterEndereco(ultimoPonto.lat, ultimoPonto.lng)
         .then(endereco => {
-            const hora = new Date(ultimoPonto.timestamp).toLocaleTimeString();
+            let hora = 'Sem horário registrado';
+
+            if (ultimoPonto.timestamp) {
+                // ✅ Ajuste para evitar Invalid Date - garante formato ISO
+                const timestampFormatado = ultimoPonto.timestamp.replace(' ', 'T').replace('Z', '');
+                const dataObj = new Date(timestampFormatado);
+                if (!isNaN(dataObj)) {
+                    hora = dataObj.toLocaleTimeString();
+                } else {
+                    console.warn("⚠️ Timestamp inválido:", ultimoPonto.timestamp);
+                }
+            }
+
             const info = `Última posição registrada<br>
                 Latitude: ${ultimoPonto.lat}<br>
                 Longitude: ${ultimoPonto.lng}<br>
