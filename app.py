@@ -699,12 +699,12 @@ def visualizar_rastreamento_tempo_real():
     # Consulta pontos de rastreamento
     if id_func and data:
         cur.execute('''
-            SELECT latitude, longitude, timestamp
+            SELECT id, latitude, longitude, timestamp
             FROM rastreamento
             WHERE id_funcionario = ? AND DATE(timestamp) = ?
             ORDER BY timestamp ASC
         ''', (id_func, data))
-        pontos = [{'lat': row[0], 'lng': row[1], 'timestamp': row[2]} for row in cur.fetchall()]
+        pontos = [{'id': row[0], 'lat': row[1], 'lng': row[2], 'timestamp': row[3]} for row in cur.fetchall()]
     else:
         pontos = []
 
@@ -752,6 +752,35 @@ def api_ultima_posicao():
         })
     else:
         return jsonify({'message': 'Nenhum registro encontrado'}), 404
+
+
+from flask import jsonify
+
+@app.route('/status_online')
+def status_online():
+    id_func = request.args.get('funcionario_id')
+    ultimo_id = int(request.args.get('ultimo_id'))
+
+    con = sqlite3.connect(DB_PATH)
+    con.execute("PRAGMA foreign_keys = ON")
+    cur = con.cursor()
+
+    cur.execute('''
+        SELECT id 
+        FROM rastreamento 
+        WHERE id_funcionario = ? 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    ''', (id_func,))
+    row = cur.fetchone()
+    con.close()
+
+    if row and row[0] > ultimo_id:
+        status = "online"
+    else:
+        status = "offline"
+
+    return jsonify({'status': status, 'ultimo_id': row[0] if row else ultimo_id})
 
 
 

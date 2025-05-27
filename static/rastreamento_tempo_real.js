@@ -1,40 +1,70 @@
-// flask_gps_ponto/static/rastreamento_tempo_real.js
-
 const OPENCAGE_API_KEY = "c9aac9c2ac4b468fbd700c9dc1489763";
 
+let marcadorTempoReal = null;
+let ultimoID = null;
+let statusAtual = "offline";
+
 function inicializarMapaTempoReal(ultimoPonto) {
+    ultimoID = ultimoPonto.id; // Armazenar o último ID
+
     const mapaTempoReal = L.map('mapaTempoReal').setView([ultimoPonto.lat, ultimoPonto.lng], 16);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(mapaTempoReal);
 
-    obterEndereco(ultimoPonto.lat, ultimoPonto.lng)
-        .then(endereco => {
-            const hora = ultimoPonto.timestamp ? new Date(ultimoPonto.timestamp).toLocaleString('pt-BR') : "Sem horário registrado";
+    marcadorTempoReal = L.circleMarker([ultimoPonto.lat, ultimoPonto.lng], {
+        radius: 10,
+        color: 'red',
+        fillColor: '#f03',
+        fillOpacity: 0.5
+    }).addTo(mapaTempoReal);
 
-            const info = `Última posição registrada<br>
-                Latitude: ${ultimoPonto.lat}<br>
-                Longitude: ${ultimoPonto.lng}<br>
-                Último horário online: ${hora}<br>
-                Endereço: ${endereco}`;
+    atualizarPopup(ultimoPonto, "offline");
 
-            L.marker([ultimoPonto.lat, ultimoPonto.lng])
-                .addTo(mapaTempoReal)
-                .bindPopup(info)
-                .openPopup();
-
-            document.getElementById('infoTempoReal').innerHTML = `
-                <strong>Último horário online:</strong> ${hora}<br>
-                <strong>Endereço:</strong> ${endereco}
-            `;
-        })
-        .catch(err => {
-            console.error("❌ Erro ao obter endereço:", err);
-            document.getElementById('infoTempoReal').innerText = "Erro ao obter endereço.";
-        });
+    setInterval(() => checarStatus(ultimoPonto, mapaTempoReal), 15000);
 
     mapaTempoReal.panTo([ultimoPonto.lat, ultimoPonto.lng]);
+}
+
+function atualizarPopup(ponto, status) {
+    obterEndereco(ponto.lat, ponto.lng).then(endereco => {
+        const hora = ponto.timestamp
+            ? new Date(ponto.timestamp).toLocaleString('pt-BR')
+            : "Sem horário registrado";
+
+        const info = `Última posição registrada<br>
+            Latitude: ${ponto.lat}<br>
+            Longitude: ${ponto.lng}<br>
+            Último horário online: ${hora}<br>
+            Status: <strong style="color: ${status === 'online' ? 'green' : 'red'}">${status}</strong><br>
+            Endereço: ${endereco}`;
+
+        marcadorTempoReal.bindPopup(info).openPopup();
+
+        document.getElementById('infoTempoReal').innerHTML = `
+            <strong>Último horário online:</strong> ${hora}<br>
+            <strong>Status:</strong> <span style="color: ${status === 'online' ? 'green' : 'red'}">${status}</span><br>
+            <strong>Endereço:</strong> ${endereco}
+        `;
+    });
+}
+
+function checarStatus(ponto, mapa) {
+    fetch(`/status_online?funcionario_id=${ponto.funcionario_id}&ultimo_id=${ultimoID}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status !== statusAtual) {
+                statusAtual = data.status;
+                marcadorTempoReal.setStyle({
+                    fillColor: statusAtual === 'online' ? 'green' : 'red',
+                    color: statusAtual === 'online' ? 'green' : 'red'
+                });
+                atualizarPopup(ponto, statusAtual);
+            }
+            ultimoID = data.ultimo_id;
+        })
+        .catch(err => console.error("❌ Erro ao checar status:", err));
 }
 
 function obterEndereco(lat, lng) {
@@ -51,11 +81,12 @@ function obterEndereco(lat, lng) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("🚀 Inicializando mapa tempo real (último ponto)...");
+    console.log("🚀 Inicializando mapa tempo real com status...");
 
     if (typeof pontos !== 'undefined' && pontos.length > 0) {
         const ultimoPonto = pontos[pontos.length - 1];
-        console.log("✅ Último ponto:", ultimoPonto);
+        ultimoPonto.funcionario_id = parseInt(new URLSearchParams(window.location.search).get('funcionario_id'));
+        ultimoPonto.id = ultimoPonto.id || 0; // Garantia
 
         inicializarMapaTempoReal(ultimoPonto);
     } else {
