@@ -689,17 +689,33 @@ def visualizar_rastreamento_tempo_real():
     if session.get("perfil") != "admin":
         return redirect(url_for("index"))
 
+    id_func = request.args.get('funcionario_id')
+    data = request.args.get('data')
+
     con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     cur = con.cursor()
 
-    # Consulta funcionários
+    # Consulta pontos de rastreamento
+    if id_func and data:
+        cur.execute('''
+            SELECT latitude, longitude
+            FROM rastreamento
+            WHERE id_funcionario = ? AND DATE(timestamp) = ?
+            ORDER BY timestamp ASC
+        ''', (id_func, data))
+        pontos = [{'lat': row[0], 'lng': row[1]} for row in cur.fetchall()]
+    else:
+        pontos = []
+
+    # Consulta funcionários com nome + sobrenome
     cur.execute('SELECT id, nome, sobrenome FROM funcionarios ORDER BY nome ASC')
     funcionarios = [{'id': row[0], 'nome_completo': f"{row[1]} {row[2]}"} for row in cur.fetchall()]
 
     con.close()
 
-    return render_template('rastreamento_tempo_real.html', funcionarios=funcionarios)
+    return render_template('rastreamento_tempo_real.html', pontos=pontos, funcionarios=funcionarios)
+
 
 @app.route('/api/ultima_posicao', methods=['GET'])
 def api_ultima_posicao():
