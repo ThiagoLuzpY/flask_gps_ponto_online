@@ -1,91 +1,32 @@
 // flask_gps_ponto/static/rastreamento_tempo_real.js
 
-let marcador = null;
-let mapaTempoReal = null;
-let ultimoTimestamp = null;
-let intervalo = null;
+// ✅ Inicializa o mapa com o último ponto
+function inicializarMapaTempoReal(ultimoPonto) {
+    const mapaTempoReal = L.map('mapaTempoReal').setView([ultimoPonto.lat, ultimoPonto.lng], 16);  // ⬅️ Aumentei o zoom de 13 para 16
 
-function inicializarMapaTempoReal() {
-    mapaTempoReal = L.map('mapaTempoReal').setView([-22.9, -43.2], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(mapaTempoReal);
+
+    L.marker([ultimoPonto.lat, ultimoPonto.lng])
+        .addTo(mapaTempoReal)
+        .bindPopup(`Última posição registrada<br>Latitude: ${ultimoPonto.lat}<br>Longitude: ${ultimoPonto.lng}`)
+        .openPopup();
+
+    // ✅ Garante centralização
+    mapaTempoReal.panTo([ultimoPonto.lat, ultimoPonto.lng]);
 }
 
-function atualizarMarcador(funcionario) {
-    const { lat, lng, nome, timestamp } = funcionario;
-
-    let status = 'offline';
-    if (ultimoTimestamp && timestamp !== ultimoTimestamp) {
-        status = 'online';
-    }
-    ultimoTimestamp = timestamp;
-
-    if (marcador) {
-        marcador.setLatLng([lat, lng]);
-    } else {
-        marcador = L.marker([lat, lng]).addTo(mapaTempoReal);
-    }
-
-    marcador.setIcon(getIcon(status));
-    marcador.bindPopup(`${nome} (${status})<br>Latitude: ${lat}<br>Longitude: ${lng}`).openPopup();
-
-    mapaTempoReal.setView([lat, lng], 16);
-}
-
-function getIcon(status) {
-    const color = status === "online" ? "green" : "red";
-    return L.icon({
-        iconUrl: `https://maps.google.com/mapfiles/ms/icons/${color}-dot.png`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-    });
-}
-
-function buscarUltimaPosicao(funcionarioId, data) {
-    const url = `/api/ultima_posicao?funcionario_id=${funcionarioId}&data=${data}`;
-
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Nenhum registro encontrado ou erro na API.");
-            }
-            return response.json();
-        })
-        .then(funcionario => {
-            atualizarMarcador(funcionario);
-        })
-        .catch(error => console.warn("⚠️ Erro ao buscar posição:", error));
-}
-
-function iniciarAtualizacaoAutomatica(funcionarioId, data) {
-    if (intervalo) {
-        clearInterval(intervalo);
-    }
-    buscarUltimaPosicao(funcionarioId, data);
-    intervalo = setInterval(() => {
-        buscarUltimaPosicao(funcionarioId, data);
-    }, 15000);
-}
-
+// ✅ Inicialização geral
 document.addEventListener("DOMContentLoaded", () => {
-    inicializarMapaTempoReal();
+    console.log("🚀 Inicializando mapa tempo real (último ponto)...");
 
-    const selectFuncionario = document.querySelector("select[name='funcionario_id']");
-    const inputData = document.querySelector("input[name='data']");
-    const botaoBuscar = document.querySelector("button[type='submit']");
+    if (typeof pontos !== 'undefined' && pontos.length > 0) {
+        const ultimoPonto = pontos[pontos.length - 1];
+        console.log("✅ Último ponto:", ultimoPonto);
 
-    botaoBuscar.addEventListener('click', (e) => {
-        e.preventDefault();
-        const funcionarioId = selectFuncionario.value;
-        const data = inputData.value;
-
-        if (!funcionarioId || !data) {
-            alert("Por favor, selecione um funcionário e uma data.");
-            return;
-        }
-
-        iniciarAtualizacaoAutomatica(funcionarioId, data);
-    });
+        inicializarMapaTempoReal(ultimoPonto);
+    } else {
+        console.warn("⚠️ Nenhum ponto encontrado para exibição.");
+    }
 });
